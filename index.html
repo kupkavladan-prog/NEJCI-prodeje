@@ -1386,7 +1386,8 @@ function updateLastUpdatedLabel() {
   el.textContent = ts ? '🕐 Poslední aktualizace: ' + ts : '';
 }
 
-// ── Cloud sync (vypnuto) ──────────────────────────
+// ── Cloud sync (Cloudflare Worker) ──────────────────────────
+const CLOUD_URL = "https://falling-lake-a09b.kupka-vladan.workers.dev";
 let cloudSyncing = false;
 
 function showSyncStatus(msg, color) {
@@ -1397,16 +1398,77 @@ function showSyncStatus(msg, color) {
 }
 
 async function saveToCloud() {
-  // Cloud sync vypnut — data se ukládají pouze do localStorage
-  const now = new Date();
-  const ts = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour:'2-digit',minute:'2-digit'});
-  localStorage.setItem('nejci_last_updated', ts);
-  updateLastUpdatedLabel();
+  try {
+    cloudSyncing = true;
+    showSyncStatus('☁ Ukládám...', 'var(--accent3)');
+    const now = new Date();
+    const ts = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour:'2-digit',minute:'2-digit'});
+    const payload = JSON.stringify({ version: 1, years: YEARS, data: data, lastUpdated: ts });
+    const resp = await fetch(CLOUD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+    if(resp.ok) {
+      localStorage.setItem('nejci_last_updated', ts);
+      updateLastUpdatedLabel();
+      showSyncStatus('✓ Uloženo v cloudu', 'var(--accent)');
+      setTimeout(() => showSyncStatus('', ''), 3000);
+    } else {
+      showSyncStatus('⚠ Chyba ukládání', 'var(--accent2)');
+    }
+  } catch(e) {
+    showSyncStatus('⚠ Cloud nedostupný', 'var(--accent2)');
+    console.error('Cloud save error:', e);
+  } finally {
+    cloudSyncing = false;
+  }
 }
 
 async function loadFromCloud() {
-  // Cloud sync vypnut
-  return false;
+  try {
+    showSyncStatus('☁ Načítám z cloudu...', 'var(--accent3)');
+    const resp = await fetch(CLOUD_URL + '?t=' + Date.now());
+    if(!resp.ok) { showSyncStatus('', ''); return false; }
+    const text = await resp.text();
+    if(!text || text === '{}') { showSyncStatus('', ''); return false; }
+    const backup = JSON.parse(text);
+    if(!backup.data) { showSyncStatus('', ''); return false; }
+    // Porovnej datum - načti jen pokud je cloud novější
+    const localTs = localStorage.getItem('nejci_last_updated');
+    if(backup.lastUpdated && localTs) {
+      const parseTs = (ts) => {
+        try {
+          const parts = ts.split(' ');
+          const d = parts[0].split('.');
+          const t = parts[1] ? parts[1].split(':') : ['0','0'];
+          return new Date(d[2], d[1]-1, d[0], t[0], t[1]).getTime();
+        } catch(e) { return 0; }
+      };
+      if(parseTs(localTs) > parseTs(backup.lastUpdated)) {
+        showSyncStatus('', '');
+        return false;
+      }
+    }
+    if(backup.lastUpdated) {
+      localStorage.setItem('nejci_last_updated', backup.lastUpdated);
+      updateLastUpdatedLabel();
+    }
+    Object.keys(backup.data).forEach(yr => {
+      data[yr] = backup.data[yr];
+      if(!YEARS.includes(+yr)) YEARS.push(+yr);
+    });
+    YEARS.sort();
+    const active = YEARS.filter(y => data[y] && Object.values(data[y]).some(m => m.some(v => v > 0)));
+    if(active.length) currentYear = Math.max(...active);
+    showSyncStatus('✓ Data načtena z cloudu', 'var(--accent)');
+    setTimeout(() => showSyncStatus('', ''), 3000);
+    return true;
+  } catch(e) {
+    showSyncStatus('', '');
+    console.error('Cloud load error:', e);
+    return false;
+  }
 }
 
 // ── Automatické ukládání do prohlížeče ──────────────────
