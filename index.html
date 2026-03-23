@@ -1522,23 +1522,23 @@ renderAll();
 loadFromCloud().then(loaded => {
   if(loaded) {
     // Zkontroluj jestli kuchyně (indexy 14-17) mají data v 2025
-    const kuchyneOK = [14,15,16,17].some(si => {
+    const dataOK = [14,15,16,17,18,19].some(si => {
       const d = data[2025] && data[2025][si];
       return d && d.some(v => v > 0);
     });
-    if(!kuchyneOK) {
-      // Cloud nemá data kuchyní - nahraj z kódu do cloudu
+    if(!dataOK) {
+      // Cloud nemá data kuchyní/velkoobchodu/e-shopu - nahraj z kódu do cloudu
       loadRealData();
       saveToCloud();
     }
     renderAll();
   } else {
-    // Cloud nedostupný - zkontroluj lokální data kuchyní
-    const kuchyneOK = [14,15,16,17].some(si => {
+    // Cloud nedostupný - zkontroluj lokální data
+    const dataOK = [14,15,16,17,18,19].some(si => {
       const d = data[2025] && data[2025][si];
       return d && d.some(v => v > 0);
     });
-    if(!kuchyneOK) loadRealData();
+    if(!dataOK) loadRealData();
     renderAll();
   }
 });
