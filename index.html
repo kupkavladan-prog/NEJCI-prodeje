@@ -1511,7 +1511,29 @@ else {
 }
 renderAll();
 // Pak zkus načíst z cloudu (přepíše lokální pokud jsou novější)
-loadFromCloud().then(loaded => { if(loaded) renderAll(); });
+loadFromCloud().then(loaded => {
+  if(loaded) {
+    // Zkontroluj jestli kuchyně (indexy 14-17) mají data v 2025
+    const kuchyneOK = [14,15,16,17].some(si => {
+      const d = data[2025] && data[2025][si];
+      return d && d.some(v => v > 0);
+    });
+    if(!kuchyneOK) {
+      // Cloud nemá data kuchyní - nahraj z kódu do cloudu
+      loadRealData();
+      saveToCloud();
+    }
+    renderAll();
+  } else {
+    // Cloud nedostupný - zkontroluj lokální data kuchyní
+    const kuchyneOK = [14,15,16,17].some(si => {
+      const d = data[2025] && data[2025][si];
+      return d && d.some(v => v > 0);
+    });
+    if(!kuchyneOK) loadRealData();
+    renderAll();
+  }
+});
 </script>
 </body>
 </html>
