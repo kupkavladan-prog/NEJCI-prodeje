@@ -1337,15 +1337,14 @@ function renderQuarterly() {
       <div style="flex:1">
         <div class="fs-label" style="font-size:0.85rem;color:var(--text);font-weight:700;letter-spacing:0.05em">FIRMA CELKEM — ${q.label}</div>
         <div class="fs-value">${fmt(firmCur)}</div>
-        <div class="fs-pct" style="color:${firmPct>=10?'var(--accent)':'var(--accent2)'}">${firmPct>=0?'+':''}${firmPct.toFixed(1)}% vs. ${prevYr}</div>
-      </div>
-      <div style="text-align:center">
-        <div class="fs-label" style="margin-bottom:6px">Podmínka firmy</div>
-        <span class="status-badge status-${firmSt}">${qLabel(firmSt, monthsDone)}</span>
-      </div>
-      <div style="text-align:center">
-        <div class="fs-label" style="margin-bottom:4px">Cíl +10%</div>
-        <div style="font-size:2rem">${firmSt==='ok'?'✅':firmSt==='fail'?'❌':'🔄'}</div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:4px">
+          <div class="fs-pct" style="color:${firmPct>=10?'var(--accent)':'var(--accent2)'}">${firmPct>=0?'+':''}${firmPct.toFixed(1)}% vs. ${prevYr}</div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.07);border-radius:10px;padding:4px 14px;border:1.5px solid ${firmSt==='ok'?'rgba(0,229,160,0.6)':firmSt==='fail'?'rgba(255,107,53,0.6)':'rgba(108,99,255,0.6)'}">
+            <span style="font-size:1rem;font-weight:900;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase">Podmínka firmy CÍL +10%</span>
+            <span class="status-badge status-${firmSt}" style="font-size:0.95rem;font-weight:800">${qLabel(firmSt, monthsDone)}</span>
+            <span style="font-size:1.4rem">${firmSt==='ok'?'✅':firmSt==='fail'?'❌':'🔄'}</span>
+          </div>
+        </div>
       </div>
     `;
     firmEl.style.borderColor = firmSt==='ok' ? 'rgba(0,229,160,0.4)' : firmSt==='fail' ? 'rgba(255,107,53,0.4)' : 'rgba(108,99,255,0.4)';
