@@ -1177,6 +1177,11 @@ function loadRealData() {
     data[2026] = {};
     STORES.forEach((_, si) => { data[2026][si] = Array(12).fill(0); });
   }
+  // Kuchyně 2026 — skutečnost Leden-Březen
+  data[2026][14] = [550474, 0, 101620, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  data[2026][15] = [9342, 0, 225163, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  data[2026][16] = [84320, 243953, 109719, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  data[2026][17] = [33995, 0, 38405, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   if(!YEARS.includes(2026)) { YEARS.push(2026); YEARS.sort(); }
 
   // 2027 — vše nuly
