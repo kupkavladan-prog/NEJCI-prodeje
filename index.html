@@ -690,11 +690,12 @@
 
 <script>
 const MONTHS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
-const STORES = ['Opava','Brno','Modo','Butovice','Hradec','Mladá Boleslav','Plzeň','České Budějovice','Olomouc City','Ol. Timpo','Přerov','Bruntál','Blansko','Hranice','Opava Kuch','Přerov Kuch','Bruntál Kuch','Hranice Kuch'];
+const STORES = ['Opava','Brno','Modo','Butovice','Hradec','Mladá Boleslav','Plzeň','České Budějovice','Olomouc City','Ol. Timpo','Přerov','Bruntál','Blansko','Hranice','Opava Kuch','Přerov Kuch','Bruntál Kuch','Hranice Kuch','Velkoobchod','E-shop'];
 const COLORS = [
   '#00e5a0','#ff6b35','#6c63ff','#ffd93d','#45b7d1','#f7797d','#a8e063',
   '#30cfd0','#f093fb','#fd746c','#43e97b','#fa709a','#4facfe','#fee140',
-  '#ff9500','#ff9500','#ff9500','#ff9500'
+  '#ff9500','#ff9500','#ff9500','#ff9500',
+  '#00bcd4','#e91e63'
 ];
 const YEARS = [2022, 2023, 2024, 2025, 2026, 2027];
 
@@ -1170,6 +1171,9 @@ function loadRealData() {
   data[2025][15] = [0, 40947, 227394, 3306, 0, 0, 0, 347, 23487, 0, 11289, 0];
   data[2025][16] = [8099, 0, 52776, 331049, 21530, 131725, 0, 12713, 201845, 91479, 22423, 1240];
   data[2025][17] = [2760, 20912, 26461, 1946, 1018, 28877, 0, 0, 13545, 0, 3748, 0];
+  // Velkoobchod a E-shop 2025
+  data[2025][18] = [271574, 177859, 259003, 55162, 187224, 160054, 117539, 61533, 200390, 260850, 317211, 100263];
+  data[2025][19] = [41236, 53042, 89746, 62872, 28010, 57848, 24969, 95239, 107255, 102885, 49807, 100929];
   if(!YEARS.includes(2025)) { YEARS.push(2025); YEARS.sort(); }
 
   // 2026 — leden zadán uživatelem, únor-prosinec = 0
