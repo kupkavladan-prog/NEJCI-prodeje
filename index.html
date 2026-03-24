@@ -9,19 +9,17 @@
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
   :root {
-    --bg: #0a0c10;
-    --surface: #111318;
-    --border: #1e2230;
-    --accent: #00e5a0;
-    --accent2: #ff6b35;
-    --accent3: #6c63ff;
-    --text: #e8eaf0;
-    --muted: #5a6070;
-    --muted: #5a6070;
---color-text-secondary: #cbd5e1;
---card: #141720;
-    --card: #141720;
-  }
+  --bg: #0a0c10;
+  --surface: #111318;
+  --border: #1e2230;
+  --accent: #00e5a0;
+  --accent2: #ff6b35;
+  --accent3: #6c63ff;
+  --text: #e8eaf0;
+  --muted: #cbd5e1; /* ZESVĚTLENÍ POPISKŮ */
+  --color-text-secondary: #cbd5e1;
+  --card: #141720;
+}
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -582,6 +580,15 @@
     font-size: 1rem;
     display: flex; align-items: center; justify-content: center;
   }
+
+.premium-summary-stats .vs-last-year { 
+    font-size: 3rem !important; 
+    font-weight: 900 !important; 
+    color: var(--accent2) !important;
+    display: block !important;
+    margin-top: 15px !important;
+}
+
 </style>
 </head>
 <body>
