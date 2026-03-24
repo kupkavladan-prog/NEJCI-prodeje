@@ -1520,14 +1520,8 @@ else {
 renderAll();
 // Pak zkus načíst z cloudu (přepíše lokální pokud jsou novější)
 loadFromCloud().then(loaded => {
-  // Zkontroluj každé středisko zvlášť - pokud má nuly, nahraj z kódu
-  const missingData = [14,15,16,17,18,19].some(si => {
-    const d = data[2025] && data[2025][si];
-    return !d || !d.some(v => v > 0);
-  });
-  if(missingData) {
+  if(!loaded) {
     loadRealData();
-    if(loaded) saveToCloud();
   }
   renderAll();
 });
