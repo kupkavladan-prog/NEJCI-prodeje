@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEJČI Expert — Znalostní báze sedaček</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #e8c547;
+    --accent2: #c9a227;
+    --text: #f0ede6;
+    --muted: #888;
+    --danger: #e05555;
+    --success: #5db87a;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 58px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 50; }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 0.04em; display: flex; align-items: center; gap: 10px; }
+  .logo-badge { background: var(--accent); color: #000; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; }
+  .header-tabs { display: flex; gap: 4px; }
+  .tab-btn { background: none; border: 1px solid transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 5px 14px; border-radius: var(--radius); cursor: pointer; transition: all .15s; }
+  .tab-btn:hover { color: var(--text); border-color: var(--border); }
+  .tab-btn.active { background: var(--accent); color: #000; font-weight: 500; border-color: var(--accent); }
+
+  .app { display: flex; height: calc(100vh - 58px); }
+
+  .sidebar { width: 320px; min-width: 260px; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h2 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .add-source-row { display: flex; gap: 6px; }
+  .add-source-btn { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 6px 0; border-radius: var(--radius); cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .add-source-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sources-list { flex: 1; overflow-y: auto; padding: 10px; }
+  .source-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; position: relative; transition: border-color .15s; }
+  .source-item:hover { border-color: #444; }
+  .source-title { font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .source-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .source-delete { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #555; cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; border-radius: 3px; transition: all .12s; }
+  .source-delete:hover { background: var(--danger); color: #fff; }
+  .no-sources { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 20px; line-height: 1.8; }
+  .no-sources .big { font-size: 30px; display: block; margin-bottom: 10px; }
+
+  .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+  .message { max-width: 720px; animation: fadeUp .2s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .message.user { align-self: flex-end; }
+  .message.assistant { align-self: flex-start; }
+  .msg-bubble { padding: 12px 16px; border-radius: 8px; font-size: 14.5px; line-height: 1.65; white-space: pre-wrap; }
+  .user .msg-bubble { background: var(--accent); color: #111; border-bottom-right-radius: 2px; }
+  .assistant .msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+  .msg-meta { font-size: 11px; color: var(--muted); margin-top: 5px; padding: 0 4px; }
+  .user .msg-meta { text-align: right; }
+  .thinking .msg-bubble { display: flex; align-items: center; gap: 6px; color: var(--muted); font-style: italic; font-size: 13px; }
+  .dots span { display: inline-block; width: 5px; height: 5px; background: var(--muted); border-radius: 50%; animation: blink 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+
+  .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; gap: 16px; }
+  .welcome-icon { font-size: 52px; }
+  .welcome h1 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; }
+  .welcome p { color: var(--muted); max-width: 420px; font-size: 14px; }
+  .welcome-hint { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .hint-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; color: var(--text); cursor: pointer; transition: all .15s; }
+  .hint-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .chat-input-area { padding: 14px 24px 18px; border-top: 1px solid var(--border); background: var(--surface); }
+  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 14px; border-radius: var(--radius); resize: none; min-height: 44px; max-height: 140px; outline: none; transition: border-color .15s; line-height: 1.5; }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--muted); }
+  .send-btn { background: var(--accent); border: none; color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: var(--radius); cursor: pointer; height: 44px; transition: background .15s, transform .1s; white-space: nowrap; }
+  .send-btn:hover { background: var(--accent2); }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .input-hint { font-size: 11px; color: var(--muted); margin-top: 7px; text-align: center; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(3px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; max-width: 540px; padding: 28px; animation: modalIn .2s ease; }
+  @keyframes modalIn { from { opacity: 0; transform: scale(.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 18px; display: flex; align-items: center; gap: 9px; }
+  .modal-label { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .modal-input, .modal-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 9px 12px; border-radius: var(--radius); outline: none; transition: border-color .15s; margin-bottom: 14px; }
+  .modal-textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+  .modal-input:focus, .modal-textarea:focus { border-color: var(--accent); }
+  .modal-input::placeholder, .modal-textarea::placeholder { color: #555; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+  .btn-secondary { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; transition: all .15s; }
+  .btn-secondary:hover { border-color: #555; color: var(--text); }
+  .btn-primary { background: var(--accent); border: none; color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; padding: 8px 18px; border-radius: var(--radius); cursor: pointer; transition: background .15s; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px; text-align: center; cursor: pointer; transition: all .15s; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(232,197,71,.04); color: var(--text); }
+  .drop-zone .drop-icon { font-size: 28px; margin-bottom: 8px; }
+  #file-input { display: none; }
+  .fetch-status { font-size: 12px; padding: 8px 12px; border-radius: var(--radius); margin-bottom: 14px; }
+  .fetch-status.loading { background: rgba(232,197,71,.08); color: var(--accent); border: 1px solid rgba(232,197,71,.2); }
+  .fetch-status.error { background: rgba(224,85,85,.08); color: var(--danger); border: 1px solid rgba(224,85,85,.2); }
+
+  .settings-panel { flex: 1; overflow-y: auto; padding: 28px; }
+  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; }
+  .settings-section h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .setting-row label { flex: 1; font-size: 13px; color: var(--muted); }
+  .setting-input { width: 260px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 10px; border-radius: var(--radius); outline: none; }
+  .setting-input:focus { border-color: var(--accent); }
+  .info-box { background: rgba(232,197,71,.06); border: 1px solid rgba(232,197,71,.2); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--accent); line-height: 1.6; margin-top: 8px; }
+  code { font-family: 'Courier New', monospace; background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: 12px; color: var(--accent); }
+  .copy-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 12px; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: all .15s; }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span>NEJČI</span>
+    <span class="logo-badge">Expert</span>
+  </div>
+  <div class="header-tabs">
+    <button class="tab-btn active" onclick="switchView('chat')" id="tab-chat">💬 Dotazy</button>
+    <button class="tab-btn" onclick="switchView('admin')" id="tab-admin">⚙️ Správa znalostí</button>
+  </div>
+</header>
+
+<div class="app" id="app-chat">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Znalostní báze</h2>
+      <div class="add-source-row">
+        <button class="add-source-btn" onclick="openModal('text')">📝 Text</button>
+        <button class="add-source-btn" onclick="openModal('url')">🔗 URL</button>
+        <button class="add-source-btn" onclick="openModal('file')">📄 Soubor</button>
+      </div>
+    </div>
+    <div class="sources-list" id="sources-list">
+      <div class="no-sources"><span class="big">📚</span>Zatím žádné podklady.<br>Přidej text, URL nebo nahraj PDF/DOCX.</div>
+    </div>
+  </aside>
+
+  <main class="chat-area">
+    <div class="chat-messages" id="chat-messages">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">🛋️</div>
+        <h1>NEJČI Expert</h1>
+        <p>Zeptej se na cokoliv o sedačkách — materiály, rozměry, konfigurace, záruky, dodací lhůty…</p>
+        <div class="welcome-hint">
+          <span class="hint-chip" onclick="sendHint(this)">Jaké jsou dostupné látky?</span>
+          <span class="hint-chip" onclick="sendHint(this)">Jak dlouho trvá dodání?</span>
+          <span class="hint-chip" onclick="sendHint(this)">Jaké jsou záruční podmínky?</span>
+          <span class="hint-chip" onclick="sendHint(this)">Mohu sedačku nakonfigurovat na míru?</span>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <div class="input-row">
+        <textarea class="chat-input" id="chat-input" placeholder="Napiš dotaz o sedačce…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Odeslat ↑</button>
+      </div>
+      <div class="input-hint">Enter = nový řádek &nbsp;·&nbsp; Ctrl+Enter = odeslat</div>
+    </div>
+  </main>
+</div>
+
+<div class="app" id="app-admin" style="display:none;">
+  <div class="settings-panel">
+    <div class="settings-section" id="api-key-section">
+      <h3>🔑 Anthropic API klíč</h3>
+      <div class="setting-row">
+        <label>API klíč (z console.anthropic.com)</label>
+        <input type="password" class="setting-input" id="api-key-input" placeholder="sk-ant-..." oninput="saveApiKey()" autocomplete="off">
+      </div>
+      <div class="info-box">
+        Klíč je uložen v localStorage tohoto prohlížeče. Získáš ho zdarma na <strong>console.anthropic.com</strong> → Get API key.
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🤖 Chování asistenta</h3>
+      <div class="modal-label">Systémový prompt</div>
+      <textarea class="modal-textarea" id="system-prompt-input" style="min-height:130px" oninput="saveSystemPrompt()">Jsi NEJČI Expert — specialista na sedačky a nábytek prodávaný v síti NEJČI nábytek. Odpovídáš na dotazy prodavačů a zákazníků. Vycházíš výhradně z poskytnuté znalostní báze. Pokud informace není v podkladech, řekni to upřímně. Odpovídáš vždy česky, věcně a přátelsky. Nedomýšlej si informace, které nemáš.</textarea>
+    </div>
+
+    <div class="settings-section">
+      <h3>📤 Sdílení aplikace</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Nahraj HTML soubor na GitHub Pages nebo jakýkoliv hosting a sdílej odkaz zaměstnancům.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="copy-btn" onclick="exportKB()">📥 Exportovat znalostní bázi (JSON)</button>
+        <button class="copy-btn" onclick="document.getElementById('import-file').click()">📤 Importovat znalostní bázi</button>
+        <input type="file" id="import-file" style="display:none" accept=".json" onchange="importKB(event)">
+        <button class="copy-btn" style="border-color:var(--accent);color:var(--accent)" onclick="generateFullHTML()">⭐ Stáhnout HTML s KB + API klíčem</button>
+      </div>
+      <div class="info-box" style="margin-top:14px;">
+        <strong>Postup sdílení:</strong><br>
+        1. Přidej podklady do znalostní báze<br>
+        2. Klikni ⭐ <strong>Stáhnout HTML s KB + API klíčem</strong><br>
+        3. Nahraj na GitHub Pages<br>
+        4. Sdílej odkaz — zaměstnanci nic nenastavují<br><br>
+        ⚠️ Soubor obsahuje tvůj API klíč — sdílej pouze s důvěryhodnými osobami.
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🗑️ Nebezpečná zóna</h3>
+      <button class="btn-secondary" onclick="clearAll()" style="border-color:var(--danger);color:var(--danger)">Smazat vše</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEXT MODAL -->
+<div class="modal-overlay" id="modal-text" style="display:none" onclick="closeModalOverlay(event,'modal-text')">
+  <div class="modal">
+    <h3>📝 Přidat textový podklad</h3>
+    <div class="modal-label">Název zdroje</div>
+    <input type="text" class="modal-input" id="text-title" placeholder="např. Popis sedačky LUXURY 3">
+    <div class="modal-label">Obsah</div>
+    <textarea class="modal-textarea" id="text-content" placeholder="Vlož libovolný text — popis produktu, ceník, záruční podmínky…"></textarea>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-text')">Zrušit</button>
+      <button class="btn-primary" onclick="addTextSource()">Přidat</button>
+    </div>
+  </div>
+</div>
+
+<!-- URL MODAL -->
+<div class="modal-overlay" id="modal-url" style="display:none" onclick="closeModalOverlay(event,'modal-url')">
+  <div class="modal">
+    <h3>🔗 Načíst obsah z URL</h3>
+    <div class="modal-label">Webová adresa</div>
+    <input type="url" class="modal-input" id="url-input" placeholder="https://...">
+    <div class="modal-label">Název zdroje (volitelný)</div>
+    <input type="text" class="modal-input" id="url-title" placeholder="Automaticky z názvu stránky">
+    <div id="fetch-status"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-url')">Zrušit</button>
+      <button class="btn-primary" id="fetch-btn" onclick="fetchURL()">Načíst</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE MODAL -->
+<div class="modal-overlay" id="modal-file" style="display:none" onclick="closeModalOverlay(event,'modal-file')">
+  <div class="modal">
+    <h3>📄 Nahrát soubor</h3>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)">
+      <div class="drop-icon">📂</div>
+      <strong>Klikni nebo přetáhni soubor</strong><br>
+      <span>PDF, DOCX, TXT, Markdown</span>
+    </div>
+    <input type="file" id="file-input" accept=".pdf,.docx,.txt,.md,.csv" onchange="handleFileInput(event)">
+    <div id="file-status"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-file')">Zrušit</button>
+      <button class="btn-primary" id="file-add-btn" onclick="addFileSource()" disabled>Přidat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+
+const DEFAULT_SYSTEM = 'Jsi NEJČI Expert — specialista na sedačky a nábytek prodávaný v síti NEJČI nábytek. Odpovídáš na dotazy prodavačů a zákazníků. Vycházíš výhradně z poskytnuté znalostní báze. Pokud informace není v podkladech, řekni to upřímně. Odpovídáš vždy česky, věcně a přátelsky. Nedomýšlej si informace, které nemáš.';
+
+// ── STATE ──
+let sources = JSON.parse(localStorage.getItem('nejci_sources') || '[]');
+let chatHistory = []; // Gemini format: [{role:'user',parts:[{text:'...'}]}, {role:'model',parts:[{text:'...'}]}]
+let pendingFileData = null;
+let isThinking = false;
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.EMBEDDED_API_KEY) {
+    localStorage.setItem('nejci_api_key', window.EMBEDDED_API_KEY);
+    document.getElementById('api-key-input').value = window.EMBEDDED_API_KEY;
+    const sec = document.getElementById('api-key-section');
+    if (sec) sec.style.display = 'none';
+  } else {
+    const key = localStorage.getItem('nejci_api_key');
+    if (key) document.getElementById('api-key-input').value = key;
+  }
+  const sp = localStorage.getItem('nejci_system_prompt');
+  if (sp) document.getElementById('system-prompt-input').value = sp;
+
+  if (window.EMBEDDED_KB && Array.isArray(window.EMBEDDED_KB)) {
+    sources = [...window.EMBEDDED_KB, ...sources];
+    saveSources();
+  }
+  renderSources();
+});
+
+// ── VIEWS ──
+function switchView(v) {
+  document.getElementById('app-chat').style.display = v === 'chat' ? 'flex' : 'none';
+  document.getElementById('app-admin').style.display = v === 'admin' ? 'flex' : 'none';
+  document.getElementById('tab-chat').classList.toggle('active', v === 'chat');
+  document.getElementById('tab-admin').classList.toggle('active', v === 'admin');
+}
+
+// ── SOURCES ──
+function saveSources() { localStorage.setItem('nejci_sources', JSON.stringify(sources)); }
+function renderSources() {
+  const list = document.getElementById('sources-list');
+  if (!sources.length) { list.innerHTML = '<div class="no-sources"><span class="big">📚</span>Zatím žádné podklady.<br>Přidej text, URL nebo nahraj PDF/DOCX.</div>'; return; }
+  list.innerHTML = sources.map((s, i) => `
+    <div class="source-item">
+      <div class="source-title"><span>${typeIcon(s.type)}</span><span>${escHtml(s.title)}</span></div>
+      <div class="source-meta">${s.type === 'url' ? escHtml(s.url || '') : s.content.length + ' znaků'}</div>
+      <button class="source-delete" onclick="deleteSource(${i})">×</button>
+    </div>`).join('');
+}
+function typeIcon(t) { return {text:'📝',url:'🔗',file:'📄'}[t]||'📁'; }
+function deleteSource(i) {
+  if (!confirm(`Smazat zdroj „${sources[i].title}"?`)) return;
+  sources.splice(i,1); saveSources(); renderSources();
+}
+
+// ── MODALS ──
+function openModal(type) {
+  pendingFileData = null;
+  const fab = document.getElementById('file-add-btn');
+  if (fab) fab.disabled = true;
+  const fs = document.getElementById('file-status');
+  if (fs) fs.innerHTML = '';
+  const fetchS = document.getElementById('fetch-status');
+  if (fetchS) fetchS.innerHTML = '';
+  document.getElementById('modal-'+type).style.display = 'flex';
+}
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModalOverlay(e, id) { if (e.target.classList.contains('modal-overlay')) closeModal(id); }
+
+// ── TEXT SOURCE ──
+function addTextSource() {
+  const title = document.getElementById('text-title').value.trim();
+  const content = document.getElementById('text-content').value.trim();
+  if (!title || !content) { alert('Vyplň název i obsah.'); return; }
+  sources.push({type:'text', title, content});
+  saveSources(); renderSources();
+  document.getElementById('text-title').value = '';
+  document.getElementById('text-content').value = '';
+  closeModal('modal-text');
+}
+
+// ── URL SOURCE ──
+async function fetchURL() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { alert('Zadej URL.'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Nejprve nastav API klíč.'); return; }
+
+  const statusEl = document.getElementById('fetch-status');
+  statusEl.innerHTML = '<div class="fetch-status loading">⏳ Načítám obsah stránky…</div>';
+  document.getElementById('fetch-btn').disabled = true;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{role:'user', content: `Načti obsah této webové stránky a extrahuj z ní veškerý relevantní text o produktech, specifikacích, cenách a vlastnostech. URL: ${url}\n\nOdpověz POUZE extrahovaným textem, bez komentářů.`}]
+      })
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || '';
+    if (!text) throw new Error('Nepodařilo se načíst obsah.');
+
+    const title = document.getElementById('url-title').value.trim() || new URL(url).hostname;
+    sources.push({type:'url', title, url, content: text});
+    saveSources(); renderSources();
+    statusEl.innerHTML = `<div class="fetch-status" style="background:rgba(93,184,122,.08);color:var(--success);border:1px solid rgba(93,184,122,.2)">✅ Načteno ${text.length} znaků</div>`;
+    setTimeout(() => { closeModal('modal-url'); statusEl.innerHTML = ''; document.getElementById('url-input').value = ''; document.getElementById('url-title').value = ''; }, 1500);
+  } catch(e) {
+    statusEl.innerHTML = `<div class="fetch-status error">❌ Chyba: ${e.message}</div>`;
+  }
+  document.getElementById('fetch-btn').disabled = false;
+}
+
+// ── FILE SOURCE ──
+function dragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function dragLeave() { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function dropFile(e) { e.preventDefault(); dragLeave(); handleFiles(e.dataTransfer.files); }
+function handleFileInput(e) { handleFiles(e.target.files); }
+
+async function handleFiles(files) {
+  const file = files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('file-status');
+  statusEl.innerHTML = '<div class="fetch-status loading">⏳ Čtu soubor…</div>';
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    let content = '';
+    if (['txt','md','csv'].includes(ext)) {
+      content = await file.text();
+    } else if (ext === 'pdf') {
+      content = await extractPDF(file);
+    } else if (ext === 'docx') {
+      content = await extractDOCX(file);
+    } else {
+      throw new Error('Nepodporovaný formát. Použij PDF, DOCX nebo TXT.');
+    }
+    pendingFileData = {type:'file', title: file.name, content};
+    document.getElementById('file-add-btn').disabled = false;
+    statusEl.innerHTML = `<div class="fetch-status" style="background:rgba(93,184,122,.08);color:var(--success);border:1px solid rgba(93,184,122,.2)">✅ ${file.name} — ${content.length} znaků</div>`;
+  } catch(e) {
+    statusEl.innerHTML = `<div class="fetch-status error">❌ ${e.message}</div>`;
+  }
+}
+
+async function extractPDF(file) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Nastav API klíč.');
+  const base64 = await fileToBase64(file);
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      messages: [{role:'user', content: [
+        {type: 'document', source: {type: 'base64', media_type: 'application/pdf', data: base64}},
+        {type: 'text', text: 'Extrahuj veškerý text z tohoto dokumentu. Zachovej strukturu a nadpisy. Odpověz POUZE extrahovaným textem.'}
+      ]}]
+    })
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || '';
+}
+
+async function extractDOCX(file) {
+  if (!window.mammoth) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+  const result = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
+  return result.value;
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+}
+function fileToBase64(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=()=>rej(new Error('Nepodařilo se číst soubor')); r.readAsDataURL(file); });
+}
+function addFileSource() {
+  if (!pendingFileData) return;
+  sources.push(pendingFileData); saveSources(); renderSources();
+  pendingFileData = null;
+  closeModal('modal-file');
+  document.getElementById('file-input').value = '';
+}
+
+// ── CHAT ──
+function getApiKey() { return window.EMBEDDED_API_KEY || document.getElementById('api-key-input').value.trim() || localStorage.getItem('nejci_api_key') || ''; }
+function getSystemPrompt() { return document.getElementById('system-prompt-input').value.trim() || DEFAULT_SYSTEM; }
+function buildKnowledgeContext() {
+  if (!sources.length) return '';
+  return '\n\n---\n## ZNALOSTNÍ BÁZE\n\n' + sources.map((s,i) => `### Zdroj ${i+1}: ${s.title}\n${s.content}`).join('\n\n---\n\n');
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isThinking) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    appendAssistantMessage('⚠️ Nastav nejprve API klíč v záložce **Správa znalostí** (⚙️ vpravo nahoře).\n\nKlíč získáš zdarma na console.anthropic.com → Get API key.');
+    return;
+  }
+
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.remove();
+
+  input.value = ''; autoResize(input);
+  appendUserMessage(text);
+  chatHistory.push({role:'user', content: text});
+
+  isThinking = true;
+  document.getElementById('send-btn').disabled = true;
+  const thinkingEl = appendThinking();
+
+  try {
+    const systemPrompt = getSystemPrompt() + buildKnowledgeContext();
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: chatHistory.slice(-20)
+      })
+    });
+    const data = await response.json();
+    thinkingEl.remove();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || '(prázdná odpověď)';
+    chatHistory.push({role:'assistant', content: reply});
+    appendAssistantMessage(reply);
+  } catch(e) {
+    thinkingEl.remove();
+    appendAssistantMessage(`❌ Chyba: ${e.message}`);
+  }
+
+  isThinking = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+function sendHint(chip) { document.getElementById('chat-input').value = chip.textContent; sendMessage(); }
+
+function appendUserMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'message user';
+  el.innerHTML = `<div class="msg-bubble">${escHtml(text)}</div><div class="msg-meta">${now()}</div>`;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollBottom();
+}
+
+function appendAssistantMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'message assistant';
+  const html = escHtml(text).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>');
+  el.innerHTML = `<div class="msg-bubble">${html}</div><div class="msg-meta">NEJČI Expert · ${now()}</div>`;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollBottom();
+}
+
+function appendThinking() {
+  const el = document.createElement('div');
+  el.className = 'message assistant thinking';
+  el.innerHTML = '<div class="msg-bubble"><div class="dots"><span></span><span></span><span></span></div>přemýšlím…</div>';
+  document.getElementById('chat-messages').appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function scrollBottom() { const c = document.getElementById('chat-messages'); c.scrollTop = c.scrollHeight; }
+
+// ── SETTINGS ──
+function saveApiKey() { localStorage.setItem('nejci_api_key', document.getElementById('api-key-input').value.trim()); }
+function saveSystemPrompt() { localStorage.setItem('nejci_system_prompt', document.getElementById('system-prompt-input').value.trim()); }
+
+function clearAll() {
+  if (!confirm('Smazat vše?')) return;
+  sources = []; chatHistory = [];
+  localStorage.removeItem('nejci_sources');
+  renderSources();
+  document.getElementById('chat-messages').innerHTML = '<div class="welcome" id="welcome-screen"><div class="welcome-icon">🛋️</div><h1>NEJČI Expert</h1><p>Znalostní báze byla vymazána.</p></div>';
+}
+
+function exportKB() {
+  const blob = new Blob([JSON.stringify(sources,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'nejci-kb.json'; a.click();
+}
+
+function importKB(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Neplatný formát');
+      sources = [...data, ...sources]; saveSources(); renderSources();
+      alert(`Importováno ${data.length} zdrojů.`);
+    } catch(err) { alert('Chyba: ' + err.message); }
+  };
+  r.readAsText(file); event.target.value = '';
+}
+
+function generateFullHTML() {
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Nejprve zadej API klíč v sekci Anthropic API klíč nahoře.'); return; }
+  if (!confirm('Soubor bude obsahovat tvůj API klíč. Sdílej pouze s důvěryhodnými zaměstnanci. Pokračovat?')) return;
+
+  // Fetch the clean original HTML file, then inject KB + API key
+  fetch(window.location.href)
+    .then(r => r.text())
+    .then(html => {
+      const injectScript = `
+<script>window.EMBEDDED_API_KEY="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";window.EMBEDDED_KB=[];</script>
+</body>
+</html>
