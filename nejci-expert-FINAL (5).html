@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="cs"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEJČI Expert — Znalostní báze sedaček</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #e8c547;
+    --accent2: #c9a227;
+    --text: #f0ede6;
+    --muted: #888;
+    --danger: #e05555;
+    --success: #5db87a;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 58px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 50; }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 0.04em; display: flex; align-items: center; gap: 10px; }
+  .logo-badge { background: var(--accent); color: #000; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; }
+  .header-tabs { display: flex; gap: 4px; }
+  .tab-btn { background: none; border: 1px solid transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 5px 14px; border-radius: var(--radius); cursor: pointer; transition: all .15s; }
+  .tab-btn:hover { color: var(--text); border-color: var(--border); }
+  .tab-btn.active { background: var(--accent); color: #000; font-weight: 500; border-color: var(--accent); }
+
+  .app { display: flex; height: calc(100vh - 58px); }
+
+  .sidebar { width: 320px; min-width: 260px; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h2 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .add-source-row { display: flex; gap: 6px; }
+  .add-source-btn { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 6px 0; border-radius: var(--radius); cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .add-source-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sources-list { flex: 1; overflow-y: auto; padding: 10px; }
+  .source-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; position: relative; transition: border-color .15s; }
+  .source-item:hover { border-color: #444; }
+  .source-title { font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .source-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .source-delete { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #555; cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; border-radius: 3px; transition: all .12s; }
+  .source-delete:hover { background: var(--danger); color: #fff; }
+  .no-sources { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 20px; line-height: 1.8; }
+  .no-sources .big { font-size: 30px; display: block; margin-bottom: 10px; }
+
+  .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+  .message { max-width: 720px; animation: fadeUp .2s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .message.user { align-self: flex-end; }
+  .message.assistant { align-self: flex-start; }
+  .msg-bubble { padding: 12px 16px; border-radius: 8px; font-size: 14.5px; line-height: 1.65; white-space: pre-wrap; }
+  .user .msg-bubble { background: var(--accent); color: #111; border-bottom-right-radius: 2px; }
+  .assistant .msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+  .msg-meta { font-size: 11px; color: var(--muted); margin-top: 5px; padding: 0 4px; }
+  .user .msg-meta { text-align: right; }
+  .thinking .msg-bubble { display: flex; align-items: center; gap: 6px; color: var(--muted); font-style: italic; font-size: 13px; }
+  .dots span { display: inline-block; width: 5px; height: 5px; background: var(--muted); border-radius: 50%; animation: blink 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+
+  .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; gap: 16px; }
+  .welcome-icon { font-size: 52px; }
+  .welcome h1 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; }
+  .welcome p { color: var(--muted); max-width: 420px; font-size: 14px; }
+  .welcome-hint { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .hint-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; color: var(--text); cursor: pointer; transition: all .15s; }
+  .hint-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .chat-input-area { padding: 14px 24px 18px; border-top: 1px solid var(--border); background: var(--surface); }
+  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 14px; border-radius: var(--radius); resize: none; min-height: 44px; max-height: 140px; outline: none; transition: border-color .15s; line-height: 1.5; }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--muted); }
+  .send-btn { background: var(--accent); border: none; color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: var(--radius); cursor: pointer; height: 44px; transition: background .15s, transform .1s; white-space: nowrap; }
+  .send-btn:hover { background: var(--accent2); }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .input-hint { font-size: 11px; color: var(--muted); margin-top: 7px; text-align: center; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(3px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; max-width: 540px; padding: 28px; animation: modalIn .2s ease; }
+  @keyframes modalIn { from { opacity: 0; transform: scale(.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 18px; display: flex; align-items: center; gap: 9px; }
+  .modal-label { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .modal-input, .modal-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 9px 12px; border-radius: var(--radius); outline: none; transition: border-color .15s; margin-bottom: 14px; }
+  .modal-textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+  .modal-input:focus, .modal-textarea:focus { border-color: var(--accent); }
+  .modal-input::placeholder, .modal-textarea::placeholder { color: #555; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+  .btn-secondary { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; transition: all .15s; }
+  .btn-secondary:hover { border-color: #555; color: var(--text); }
+  .btn-primary { background: var(--accent); border: none; color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; padding: 8px 18px; border-radius: var(--radius); cursor: pointer; transition: background .15s; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px; text-align: center; cursor: pointer; transition: all .15s; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(232,197,71,.04); color: var(--text); }
+  .drop-zone .drop-icon { font-size: 28px; margin-bottom: 8px; }
+  #file-input { display: none; }
+  .fetch-status { font-size: 12px; padding: 8px 12px; border-radius: var(--radius); margin-bottom: 14px; }
+  .fetch-status.loading { background: rgba(232,197,71,.08); color: var(--accent); border: 1px solid rgba(232,197,71,.2); }
+  .fetch-status.error { background: rgba(224,85,85,.08); color: var(--danger); border: 1px solid rgba(224,85,85,.2); }
+
+  .settings-panel { flex: 1; overflow-y: auto; padding: 28px; }
+  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; }
+  .settings-section h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .setting-row label { flex: 1; font-size: 13px; color: var(--muted); }
+  .setting-input { width: 260px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 10px; border-radius: var(--radius); outline: none; }
+  .setting-input:focus { border-color: var(--accent); }
+  .info-box { background: rgba(232,197,71,.06); border: 1px solid rgba(232,197,71,.2); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--accent); line-height: 1.6; margin-top: 8px; }
+  code { font-family: 'Courier New', monospace; background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: 12px; color: var(--accent); }
+  .copy-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 12px; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: all .15s; }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script></head>
+<body>
+
+<header>
+  <div class="logo">
+    <span>NEJČI</span>
+    <span class="logo-badge">Expert</span>
+  </div>
+  <div class="header-tabs">
+    <button class="tab-btn active" onclick="switchView('chat')" id="tab-chat">💬 Dotazy</button>
+    <button class="tab-btn" onclick="switchView('admin')" id="tab-admin">⚙️ Správa znalostí</button>
+  </div>
+</header>
+
+<div class="app" id="app-chat" style="display:flex">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Znalostní báze</h2>
+      <div class="add-source-row">
+        <button class="add-source-btn" onclick="openModal('text')">📝 Text</button>
+        <button class="add-source-btn" onclick="openModal('url')">🔗 URL</button>
+        <button class="add-source-btn" onclick="openModal('file')">📄 Soubor</button>
+      </div>
+    </div>
+    <div class="sources-list" id="sources-list">
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Leggy (2) (1).docx</span></div>
+      <div class="source-meta">2047 znaků</div>
+      <button class="source-delete" onclick="deleteSource(0)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Edenzo.docx</span></div>
+      <div class="source-meta">2628 znaků</div>
+      <button class="source-delete" onclick="deleteSource(1)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Fixie 15.docx</span></div>
+      <div class="source-meta">2428 znaků</div>
+      <button class="source-delete" onclick="deleteSource(2)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Frediano.docx</span></div>
+      <div class="source-meta">2725 znaků</div>
+      <button class="source-delete" onclick="deleteSource(3)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Gisele.docx</span></div>
+      <div class="source-meta">2000 znaků</div>
+      <button class="source-delete" onclick="deleteSource(4)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Iberio.docx</span></div>
+      <div class="source-meta">1604 znaků</div>
+      <button class="source-delete" onclick="deleteSource(5)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Linda (2).docx</span></div>
+      <div class="source-meta">1272 znaků</div>
+      <button class="source-delete" onclick="deleteSource(6)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Marylin (2).docx</span></div>
+      <div class="source-meta">1312 znaků</div>
+      <button class="source-delete" onclick="deleteSource(7)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Petty.docx</span></div>
+      <div class="source-meta">1437 znaků</div>
+      <button class="source-delete" onclick="deleteSource(8)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Romello.docx</span></div>
+      <div class="source-meta">1612 znaků</div>
+      <button class="source-delete" onclick="deleteSource(9)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Round.docx</span></div>
+      <div class="source-meta">1528 znaků</div>
+      <button class="source-delete" onclick="deleteSource(10)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Stellar.docx</span></div>
+      <div class="source-meta">1864 znaků</div>
+      <button class="source-delete" onclick="deleteSource(11)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Tullio.docx</span></div>
+      <div class="source-meta">3042 znaků</div>
+      <button class="source-delete" onclick="deleteSource(12)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Vanix.docx</span></div>
+      <div class="source-meta">1758 znaků</div>
+      <button class="source-delete" onclick="deleteSource(13)">×</button>
+    </div>
+    <div class="source-item">
+      <div class="source-title"><span>📄</span><span>Vera (2).docx</span></div>
+      <div class="source-meta">2796 znaků</div>
+      <button class="source-delete" onclick="deleteSource(14)">×</button>
+    </div></div>
+  </aside>
+
+  <main class="chat-area">
+    <div class="chat-messages" id="chat-messages">
+      
+    <div class="message user"><div class="msg-bubble">jaké nohy má leggy</div><div class="msg-meta">16:07</div></div><div class="message assistant"><div class="msg-bubble"># Nožky sedačky LEGGY
+
+Sedačka LEGGY má nožky v těchto variantách:
+
+1. <strong>Černá – matná</strong>
+2. <strong>Chrom</strong>
+
+Zákazník si tedy může vybrat mezi těmito dvěma možnostmi podle svých preferencí a stylu interiéru.</div><div class="msg-meta">NEJČI Expert · 16:07</div></div></div>
+    <div class="chat-input-area">
+      <div class="input-row">
+        <textarea class="chat-input" id="chat-input" placeholder="Napiš dotaz o sedačce…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)" style="height: 43px;"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Odeslat ↑</button>
+      </div>
+      <div class="input-hint">Enter = nový řádek &nbsp;·&nbsp; Ctrl+Enter = odeslat</div>
+    </div>
+  </main>
+</div>
+
+<div class="app" id="app-admin" style="display:none">
+  <div class="settings-panel">
+    <div class="settings-section" id="api-key-section">
+      <h3>🔑 Anthropic API klíč</h3>
+      <div class="setting-row">
+        <label>API klíč (z console.anthropic.com)</label>
+        <input type="password" class="setting-input" id="api-key-input" placeholder="sk-ant-..." oninput="saveApiKey()" autocomplete="off">
+      </div>
+      <div class="info-box">
+        Klíč je uložen v localStorage tohoto prohlížeče. Získáš ho zdarma na <strong>console.anthropic.com</strong> → Get API key.
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🤖 Chování asistenta</h3>
+      <div class="modal-label">Systémový prompt</div>
+      <textarea class="modal-textarea" id="system-prompt-input" style="min-height:130px" oninput="saveSystemPrompt()">Jsi NEJČI Expert — specialista na sedačky a nábytek prodávaný v síti NEJČI nábytek. Odpovídáš na dotazy prodavačů a zákazníků. Vycházíš výhradně z poskytnuté znalostní báze. Pokud informace není v podkladech, řekni to upřímně. Odpovídáš vždy česky, věcně a přátelsky. Nedomýšlej si informace, které nemáš.</textarea>
+    </div>
+
+    <div class="settings-section">
+      <h3>📤 Sdílení aplikace</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Nahraj HTML soubor na GitHub Pages nebo jakýkoliv hosting a sdílej odkaz zaměstnancům.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="copy-btn" onclick="exportKB()">📥 Exportovat znalostní bázi (JSON)</button>
+        <button class="copy-btn" onclick="document.getElementById('import-file').click()">📤 Importovat znalostní bázi</button>
+        <input type="file" id="import-file" style="display:none" accept=".json" onchange="importKB(event)">
+        <button class="copy-btn" style="border-color:var(--accent);color:var(--accent)" onclick="generateFullHTML()">⭐ Stáhnout HTML s KB + API klíčem</button>
+      </div>
+      <div class="info-box" style="margin-top:14px;">
+        <strong>Postup sdílení:</strong><br>
+        1. Přidej podklady do znalostní báze<br>
+        2. Klikni ⭐ <strong>Stáhnout HTML s KB + API klíčem</strong><br>
+        3. Nahraj na GitHub Pages<br>
+        4. Sdílej odkaz — zaměstnanci nic nenastavují<br><br>
+        ⚠️ Soubor obsahuje tvůj API klíč — sdílej pouze s důvěryhodnými osobami.
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🗑️ Nebezpečná zóna</h3>
+      <button class="btn-secondary" onclick="clearAll()" style="border-color:var(--danger);color:var(--danger)">Smazat vše</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEXT MODAL -->
+<div class="modal-overlay" id="modal-text" style="display:none" onclick="closeModalOverlay(event,'modal-text')">
+  <div class="modal">
+    <h3>📝 Přidat textový podklad</h3>
+    <div class="modal-label">Název zdroje</div>
+    <input type="text" class="modal-input" id="text-title" placeholder="např. Popis sedačky LUXURY 3">
+    <div class="modal-label">Obsah</div>
+    <textarea class="modal-textarea" id="text-content" placeholder="Vlož libovolný text — popis produktu, ceník, záruční podmínky…"></textarea>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-text')">Zrušit</button>
+      <button class="btn-primary" onclick="addTextSource()">Přidat</button>
+    </div>
+  </div>
+</div>
+
+<!-- URL MODAL -->
+<div class="modal-overlay" id="modal-url" style="display:none" onclick="closeModalOverlay(event,'modal-url')">
+  <div class="modal">
+    <h3>🔗 Načíst obsah z URL</h3>
+    <div class="modal-label">Webová adresa</div>
+    <input type="url" class="modal-input" id="url-input" placeholder="https://...">
+    <div class="modal-label">Název zdroje (volitelný)</div>
+    <input type="text" class="modal-input" id="url-title" placeholder="Automaticky z názvu stránky">
+    <div id="fetch-status"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-url')">Zrušit</button>
+      <button class="btn-primary" id="fetch-btn" onclick="fetchURL()">Načíst</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE MODAL -->
+<div class="modal-overlay" id="modal-file" style="display: none;" onclick="closeModalOverlay(event,'modal-file')">
+  <div class="modal">
+    <h3>📄 Nahrát soubor</h3>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)">
+      <div class="drop-icon">📂</div>
+      <strong>Klikni nebo přetáhni soubor</strong><br>
+      <span>PDF, DOCX, TXT, Markdown</span>
+    </div>
+    <input type="file" id="file-input" accept=".pdf,.docx,.txt,.md,.csv" onchange="handleFileInput(event)">
+    <div id="file-status"><div class="fetch-status" style="background:rgba(93,184,122,.08);color:var(--success);border:1px solid rgba(93,184,122,.2)">✅ Vera (2).docx — 2796 znaků</div></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-file')">Zrušit</button>
+      <button class="btn-primary" id="file-add-btn" onclick="addFileSource()">Přidat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+
+const DEFAULT_SYSTEM = 'Jsi NEJČI Expert — specialista na sedačky a nábytek prodávaný v síti NEJČI nábytek. Odpovídáš na dotazy prodavačů a zákazníků. Vycházíš výhradně z poskytnuté znalostní báze. Pokud informace není v podkladech, řekni to upřímně. Odpovídáš vždy česky, věcně a přátelsky. Nedomýšlej si informace, které nemáš.';
+
+// ── STATE ──
+let sources = JSON.parse(localStorage.getItem('nejci_sources') || '[]');
+let chatHistory = []; // Gemini format: [{role:'user',parts:[{text:'...'}]}, {role:'model',parts:[{text:'...'}]}]
+let pendingFileData = null;
+let isThinking = false;
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.EMBEDDED_API_KEY) {
+    localStorage.setItem('nejci_api_key', window.EMBEDDED_API_KEY);
+    document.getElementById('api-key-input').value = window.EMBEDDED_API_KEY;
+    const sec = document.getElementById('api-key-section');
+    if (sec) sec.style.display = 'none';
+  } else {
+    const key = localStorage.getItem('nejci_api_key');
+    if (key) document.getElementById('api-key-input').value = key;
+  }
+  const sp = localStorage.getItem('nejci_system_prompt');
+  if (sp) document.getElementById('system-prompt-input').value = sp;
+
+  if (window.EMBEDDED_KB && Array.isArray(window.EMBEDDED_KB)) {
+    sources = [...window.EMBEDDED_KB, ...sources];
+    saveSources();
+  }
+  renderSources();
+});
+
+// ── VIEWS ──
+function switchView(v) {
+  document.getElementById('app-chat').style.display = v === 'chat' ? 'flex' : 'none';
+  document.getElementById('app-admin').style.display = v === 'admin' ? 'flex' : 'none';
+  document.getElementById('tab-chat').classList.toggle('active', v === 'chat');
+  document.getElementById('tab-admin').classList.toggle('active', v === 'admin');
+}
+
+// ── SOURCES ──
+function saveSources() { localStorage.setItem('nejci_sources', JSON.stringify(sources)); }
+function renderSources() {
+  const list = document.getElementById('sources-list');
+  if (!sources.length) { list.innerHTML = '<div class="no-sources"><span class="big">📚</span>Zatím žádné podklady.<br>Přidej text, URL nebo nahraj PDF/DOCX.</div>'; return; }
+  list.innerHTML = sources.map((s, i) => `
+    <div class="source-item">
+      <div class="source-title"><span>${typeIcon(s.type)}</span><span>${escHtml(s.title)}</span></div>
+      <div class="source-meta">${s.type === 'url' ? escHtml(s.url || '') : s.content.length + ' znaků'}</div>
+      <button class="source-delete" onclick="deleteSource(${i})">×</button>
+    </div>`).join('');
+}
+function typeIcon(t) { return {text:'📝',url:'🔗',file:'📄'}[t]||'📁'; }
+function deleteSource(i) {
+  if (!confirm(`Smazat zdroj „${sources[i].title}"?`)) return;
+  sources.splice(i,1); saveSources(); renderSources();
+}
+
+// ── MODALS ──
+function openModal(type) {
+  pendingFileData = null;
+  const fab = document.getElementById('file-add-btn');
+  if (fab) fab.disabled = true;
+  const fs = document.getElementById('file-status');
+  if (fs) fs.innerHTML = '';
+  const fetchS = document.getElementById('fetch-status');
+  if (fetchS) fetchS.innerHTML = '';
+  document.getElementById('modal-'+type).style.display = 'flex';
+}
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModalOverlay(e, id) { if (e.target.classList.contains('modal-overlay')) closeModal(id); }
+
+// ── TEXT SOURCE ──
+function addTextSource() {
+  const title = document.getElementById('text-title').value.trim();
+  const content = document.getElementById('text-content').value.trim();
+  if (!title || !content) { alert('Vyplň název i obsah.'); return; }
+  sources.push({type:'text', title, content});
+  saveSources(); renderSources();
+  document.getElementById('text-title').value = '';
+  document.getElementById('text-content').value = '';
+  closeModal('modal-text');
+}
+
+// ── URL SOURCE ──
+async function fetchURL() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { alert('Zadej URL.'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Nejprve nastav API klíč.'); return; }
+
+  const statusEl = document.getElementById('fetch-status');
+  statusEl.innerHTML = '<div class="fetch-status loading">⏳ Načítám obsah stránky…</div>';
+  document.getElementById('fetch-btn').disabled = true;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{role:'user', content: `Načti obsah této webové stránky a extrahuj z ní veškerý relevantní text o produktech, specifikacích, cenách a vlastnostech. URL: ${url}\n\nOdpověz POUZE extrahovaným textem, bez komentářů.`}]
+      })
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || '';
+    if (!text) throw new Error('Nepodařilo se načíst obsah.');
+
+    const title = document.getElementById('url-title').value.trim() || new URL(url).hostname;
+    sources.push({type:'url', title, url, content: text});
+    saveSources(); renderSources();
+    statusEl.innerHTML = `<div class="fetch-status" style="background:rgba(93,184,122,.08);color:var(--success);border:1px solid rgba(93,184,122,.2)">✅ Načteno ${text.length} znaků</div>`;
+    setTimeout(() => { closeModal('modal-url'); statusEl.innerHTML = ''; document.getElementById('url-input').value = ''; document.getElementById('url-title').value = ''; }, 1500);
+  } catch(e) {
+    statusEl.innerHTML = `<div class="fetch-status error">❌ Chyba: ${e.message}</div>`;
+  }
+  document.getElementById('fetch-btn').disabled = false;
+}
+
+// ── FILE SOURCE ──
+function dragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function dragLeave() { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function dropFile(e) { e.preventDefault(); dragLeave(); handleFiles(e.dataTransfer.files); }
+function handleFileInput(e) { handleFiles(e.target.files); }
+
+async function handleFiles(files) {
+  const file = files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('file-status');
+  statusEl.innerHTML = '<div class="fetch-status loading">⏳ Čtu soubor…</div>';
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    let content = '';
+    if (['txt','md','csv'].includes(ext)) {
+      content = await file.text();
+    } else if (ext === 'pdf') {
+      content = await extractPDF(file);
+    } else if (ext === 'docx') {
+      content = await extractDOCX(file);
+    } else {
+      throw new Error('Nepodporovaný formát. Použij PDF, DOCX nebo TXT.');
+    }
+    pendingFileData = {type:'file', title: file.name, content};
+    document.getElementById('file-add-btn').disabled = false;
+    statusEl.innerHTML = `<div class="fetch-status" style="background:rgba(93,184,122,.08);color:var(--success);border:1px solid rgba(93,184,122,.2)">✅ ${file.name} — ${content.length} znaků</div>`;
+  } catch(e) {
+    statusEl.innerHTML = `<div class="fetch-status error">❌ ${e.message}</div>`;
+  }
+}
+
+async function extractPDF(file) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Nastav API klíč.');
+  const base64 = await fileToBase64(file);
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      messages: [{role:'user', content: [
+        {type: 'document', source: {type: 'base64', media_type: 'application/pdf', data: base64}},
+        {type: 'text', text: 'Extrahuj veškerý text z tohoto dokumentu. Zachovej strukturu a nadpisy. Odpověz POUZE extrahovaným textem.'}
+      ]}]
+    })
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || '';
+}
+
+async function extractDOCX(file) {
+  if (!window.mammoth) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+  const result = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
+  return result.value;
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+}
+function fileToBase64(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=()=>rej(new Error('Nepodařilo se číst soubor')); r.readAsDataURL(file); });
+}
+function addFileSource() {
+  if (!pendingFileData) return;
+  sources.push(pendingFileData); saveSources(); renderSources();
+  pendingFileData = null;
+  closeModal('modal-file');
+  document.getElementById('file-input').value = '';
+}
+
+// ── CHAT ──
+function getApiKey() { return window.EMBEDDED_API_KEY || document.getElementById('api-key-input').value.trim() || localStorage.getItem('nejci_api_key') || ''; }
+function getSystemPrompt() { return document.getElementById('system-prompt-input').value.trim() || DEFAULT_SYSTEM; }
+function buildKnowledgeContext() {
+  if (!sources.length) return '';
+  return '\n\n---\n## ZNALOSTNÍ BÁZE\n\n' + sources.map((s,i) => `### Zdroj ${i+1}: ${s.title}\n${s.content}`).join('\n\n---\n\n');
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isThinking) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    appendAssistantMessage('⚠️ Nastav nejprve API klíč v záložce **Správa znalostí** (⚙️ vpravo nahoře).\n\nKlíč získáš zdarma na console.anthropic.com → Get API key.');
+    return;
+  }
+
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.remove();
+
+  input.value = ''; autoResize(input);
+  appendUserMessage(text);
+  chatHistory.push({role:'user', content: text});
+
+  isThinking = true;
+  document.getElementById('send-btn').disabled = true;
+  const thinkingEl = appendThinking();
+
+  try {
+    const systemPrompt = getSystemPrompt() + buildKnowledgeContext();
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: chatHistory.slice(-20)
+      })
+    });
+    const data = await response.json();
+    thinkingEl.remove();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || '(prázdná odpověď)';
+    chatHistory.push({role:'assistant', content: reply});
+    appendAssistantMessage(reply);
+  } catch(e) {
+    thinkingEl.remove();
+    appendAssistantMessage(`❌ Chyba: ${e.message}`);
+  }
+
+  isThinking = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+function sendHint(chip) { document.getElementById('chat-input').value = chip.textContent; sendMessage(); }
+
+function appendUserMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'message user';
+  el.innerHTML = `<div class="msg-bubble">${escHtml(text)}</div><div class="msg-meta">${now()}</div>`;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollBottom();
+}
+
+function appendAssistantMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'message assistant';
+  const html = escHtml(text).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>');
+  el.innerHTML = `<div class="msg-bubble">${html}</div><div class="msg-meta">NEJČI Expert · ${now()}</div>`;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollBottom();
+}
+
+function appendThinking() {
+  const el = document.createElement('div');
+  el.className = 'message assistant thinking';
+  el.innerHTML = '<div class="msg-bubble"><div class="dots"><span></span><span></span><span></span></div>přemýšlím…</div>';
+  document.getElementById('chat-messages').appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function scrollBottom() { const c = document.getElementById('chat-messages'); c.scrollTop = c.scrollHeight; }
+
+// ── SETTINGS ──
+function saveApiKey() { localStorage.setItem('nejci_api_key', document.getElementById('api-key-input').value.trim()); }
+function saveSystemPrompt() { localStorage.setItem('nejci_system_prompt', document.getElementById('system-prompt-input').value.trim()); }
+
+function clearAll() {
+  if (!confirm('Smazat vše?')) return;
+  sources = []; chatHistory = [];
+  localStorage.removeItem('nejci_sources');
+  renderSources();
+  document.getElementById('chat-messages').innerHTML = '<div class="welcome" id="welcome-screen"><div class="welcome-icon">🛋️</div><h1>NEJČI Expert</h1><p>Znalostní báze byla vymazána.</p></div>';
+}
+
+function exportKB() {
+  const blob = new Blob([JSON.stringify(sources,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'nejci-kb.json'; a.click();
+}
+
+function importKB(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Neplatný formát');
+      sources = [...data, ...sources]; saveSources(); renderSources();
+      alert(`Importováno ${data.length} zdrojů.`);
+    } catch(err) { alert('Chyba: ' + err.message); }
+  };
+  r.readAsText(file); event.target.value = '';
+}
+
+function generateFullHTML() {
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Nejprve zadej API klíč.'); return; }
+  if (!sources.length) { alert('Nejprve nahraj alespoň jeden soubor do znalostní báze.'); return; }
+  if (!confirm('Soubor bude obsahovat tvůj API klíč. Sdílej pouze s důvěryhodnými zaměstnanci. Pokračovat?')) return;
+
+  // Switch to chat view first so FINAL opens correctly
+  switchView('chat');
+
+  setTimeout(() => {
+    let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+    // Remove existing embedded scripts
+    html = html.replace(/<script>\s*window\.EMBEDDED_API_KEY[\s\S]*?<\/script>/g, '');
+
+    // Ensure chat is visible and admin is hidden in the output
+    html = html.replace(/id="app-admin"[^>]*style="[^"]*"/, 'id="app-admin" style="display:none"');
+    html = html.replace(/id="app-chat"[^>]*style="[^"]*"/, 'id="app-chat" style="display:flex"');
+
+    // Inject embedded data
+    const embedScript = '<script>\nwindow.EMBEDDED_API_KEY = ' + JSON.stringify(apiKey) + ';\nwindow.EMBEDDED_KB = ' + JSON.stringify(sources) + ';\n<\/script>';
+    html = html.replace('<script>
+window.EMBEDDED_API_KEY = "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";
+window.EMBEDDED_KB = [{"type":"file","title":"Leggy (2) (1).docx","content":"Sedací souprava LEGGY (Design)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Belgické látky FibreGuard\n\nAtest na čištění látek pouze vodou\n\nAntibakteriální vlastnosti\n\nVhodné pro:\n\nrodiny s dětmi\n\ndomácnosti se zvýšenými hygienickými nároky\n\n\n\n3. Potahové materiály – kůže\n\nVýběr italských kůží nejvyšší kvality\n\nŠiroká paleta barevných provedení\n\n\n\n4. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířka sedáku: 73 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\nTaburet – základní varianta bez úložného prostoru\n\nTaburet PD:\n\ndostavný\n\ns úložným prostorem\n\nlze napojit napevno k sedáku\n\nspojení pomocí ozubených aretačních tyčinek\n\n\n\n5. Funkce spaní\n\nVýsuvný rozklad na spaní\n\nOčalouněná matrace:\n\nve stejné barvě jako potahová látka\n\nVhodné pro:\n\nobčasné spaní\n\nnávštěvy\n\n\n\n6. Design spodního korpusu\n\nVarianta s elegantní dřevěnou lištou na spodním korpusu:\n\nmožnost výběru různého moření dřeva\n\nAlternativa:\n\nvarianta bez dřevěné lišty - výška dílu stená jako s lištou\n\n\n\n7. Boky\n\nBok o šířce 40 cm\n\nBok je vybaven polohováním\n\nMožnost použít bok od sedačky Stellar (20cm) bez příplatku\n\n,\n\n8. Úložné prostory\n\nÚložný prostor je k dispozici v modulech:\n\nPR\n\nPD\n\nD1N\n\nNa přání zákazníka (za příplatek):\n\nmožnost úložného prostoru v jednotlivém sedáku\n\nřešení formou výsuvného šuplíku\n\n\n\n9. Konstrukce a komfort sezení\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nPUR pěna\n\nza příplatek možnost objednání tužšího sedáku (ne pěny, mění se pružiny)\n\n\n\n10. Kombinace materiálů\n\nU tohoto modelu je možná kombinace:\n\nbarev\n\ndruhů látek\n\nkůží cena při kombinaci je uvedena na konci ceníku\n\n\n\n11. Nožky a kovové prvky\n\nNožky:\n\nčerná – matná\n\nnebo chrom\n\nMechanismy záhlavníků :\n\nčerná\n\nnebo chrom\n\n\n\n\n\n"},{"type":"file","title":"Edenzo.docx","content":"Sedací souprava EDENZO (Comforti)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nDostupné tloušťky:\n\n0,9–1,1 mm\n\n1,2–1,3 mm\n\nLuxusní varianta:\n\nbroušená kůže Vintage (nubuk)\n\n\n\n3. Modulový systém\n\nModel je možné skládat modulově\n\nŠířky sedáků:\n\n61 cm\n\n71 cm\n\n81 cm\n\nZ modulů lze sestavit:\n\nkřeslo\n\ndvojpohovku\n\ntrojpohovku\n\ntaburet\n\n\n\n4. Relax funkce – ZERO GRAVITY\n\nSedáky lze konfigurovat s:\n\nelektrickým polohováním\n\naku polohováním (baterie)\n\nPolohování:\n\nnohou\n\nzáhlavníků\n\nRelaxační poloha ZERO GRAVITY:\n\nnohy jsou výše než tělo\n\nmaximální odlehčení páteře\n\n\n\n5. Úložný prostor\n\nÚložný prostor je k dispozici v modulech:\n\n1,5 SWO\n\n1,3 STP\n\n\n\n6. Barový prvek SBV (šířka 35 cm)\n\nLze:\n\nvložit mezi sedáky\n\nnebo ukončit sestavu\n\nSoučástí je dřevěná otočná police\n\nmožnost výběru moření dřeva\n\nnebo očalounění látkou či kůží\n\nVarianty výbavy barového prvku\n\n2 kovové otvory na láhve\n\nmožnost chlazení nebo ohřevu nápojů\n\nvyjímatelné, ohebné LED světlo s dotykovým stmívačem\n\nmožnost vnitřního osvětlení se senzorem\n\nzásuvka 230 V\n\n2× USB\n\nindukční nabíječka mobilního telefonu\n\n\n\n7. Rozkládací lůžka\n\nHlavní rozklad (italský rozklad):\n\nmatrace 12 cm – vhodná pro denní spaní\n\nrozměry:\n\n140 × 190 cm\n\n120 × 190 cm\n\nlamelový rošt, který je půlený\n\nModul 1,5 RFO:\n\nrozkládací jednolůžko 70 cm\n\nvčetně roštu a matrace\n\n\n\n8. Nožky\n\nDřevěné bukové nožky\n\nVýška:\n\n5,5 cm\n\nMožnost výběru moření\n\n\n\n9. Ukončení modulů\n\nSamostatné vnitřní moduly nelze ukončit očalouněním bez boku\n\nSedačku lze ukončit barovým modulem SBV\n\nModul SBV bar nelze spojit s područkou\n\n\n\n10. Prošití\n\nMožnost okrasného prošití nití – „mokasin“\n\nDostupné:\n\nv látce\n\nv kůži\n\nBez příplatku\n\n\n\n11. Konstrukce a výplně\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce pružná HR pěna\n\nOpěrky:\n\nHR pěna\n\n\n\n12. Omezení kombinací\n\nNelze kombinovat:\n\nrůzné látky\n\nrůzné kůže\n\nrůzné barvy v rámci jedné sestavy\n\nNení možné jiné prošití nití\n\nPři provedení v kůži je sedák půlený švem\n\n\n\n13. Atypické úpravy\n\nAtypy nejsou možné, zejména:\n\núpravy\n\nzkracování\n\nprodlužování modulů mimo rozměry (viz produktový list)\n\n\n\n14. Technická látka – upozornění pro prodej\n\nU modulů:\n\nroh\n\nbar\n\nmoduly s funkcí je korpus výrazně snížený\n\nZespodu je viditelné očalounění černou technickou látkou\n\nNěkteří zákazníci s tím mohou mít problém → nutné komunikovat předem\n\n\n\n"},{"type":"file","title":"Fixie 15.docx","content":"Sedací souprava FIXIE (Design)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Belgické látky FibreGuard\n\nAtest na čištění látek pouze vodou\n\nAntimikrobiální vlastnosti\n\nSnadná údržba\n\nVhodné pro rodiny s dětmi a domácnosti s vyššími hygienickými nároky\n\n\n\n3. Potahové materiály – kůže\n\nVýběr italských kůží\n\nŠiroká paleta barevných provedení\n\n\n\n4. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířky sedáků:\n\n55 cm\n\n65 cm\n\n75 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\nVýsuvný rozklad na spaní\n\nza příplatek možnost očalounění matrace\n\nKřeslo:\n\nmanuální polohování\n\novládání umístěné na boku\n\nTaburety:\n\nnabízeny ve 4 rozměrech\n\nvždy s úložným prostorem\n\nU sestavy UXMR jsou součástí:\n\npolštáře 50 × 50 cm\n\npolštáře 40 × 40 cm\n\n\n\n5. Relaxační modul LG RELAX\n\nElektrický relaxační modul LG\n\nSamostatné polohování:\n\nnohou\n\nzad\n\nPo doplnění boků z obou stran lze vytvořit:\n\nsamostatnou polohovací lenošku\n\nJedna z hlavních předností modelu FIXIE\n\n\n\n6. Boky\n\nMožnost ukončení sedačky výběrem:\n\n7 typů boků\n\nŠířky boků:\n\nod 11 cm\n\ndo 28 cm\n\n\n\n7. Úložné prostory\n\nÚložný prostor je k dispozici v modulech:\n\nLG\n\nLG mini\n\nRXL\n\nRXM\n\nZa příplatek:\n\nmožnost úložného prostoru v jednotlivém sedáku\n\nřešeno formou výsuvného šuplíku\n\n\n\n8. Samostatný modul s lůžkem\n\nModul 2,5 R:\n\nrozkládací lůžko 134 × 200 cm\n\nmatrace vhodná pro denní spaní\n\nDŮLEŽITÉ OMEZENÍ:\n\nmodul NELZE kombinovat s ostatními moduly\n\nfunguje pouze jako samostatný prvek\n\n\n\n9. Konstrukce a komfort sezení\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nPUR pěna\n\nza příplatek možnost objednání tužšího sedáku\n\n\n\n10. Kombinace materiálů\n\nU tohoto modelu je možná kombinace:\n\nbarev\n\ndruhů látek\n\nkůží → silná designová a prodejní výhoda modelu FIXIE\n\n\n\n11. Prošití\n\nSedací části jsou prošité nití\n\nMožná je i varianta bez prošití\n\n\n\n12. Nožky\n\nChromové nožky\n\nvýška 3 cm\n\nAtypicky lze vyrobit:\n\ndřevěné nožky\n\nv různých odstínech\n\nv přibližně stejné výšce\n\n\n\n13. Individuální úpravy\n\nPokud zákazníkovi nevyhovují nabízené rozměry:\n\nje možné zpracovat individuální kalkulaci\n\nsedačku lze přizpůsobit konkrétním požadavkům\n\n\n\n"},{"type":"file","title":"Frediano.docx","content":"Sedací souprava FREDIANO (Comforti)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nDostupné tloušťky:\n\n0,9–1,0 mm\n\n1,3–1,5 mm\n\nLuxusní varianta:\n\nbroušená kůže Vintage (nubuk)\n\n\n\n3. Modulový systém a relax funkce\n\nModel je možné skládat modulově\n\nŠířky sedáků:\n\n70 cm\n\n81 cm\n\nSedáky lze konfigurovat s:\n\nelektrickým polohováním\n\naku polohováním (nabíjecí baterie)\n\nRelax funkce je možná:\n\ns modulem bez boků\n\ni s modulem s bokem\n\nModel je vybaven polohovacími záhlavníky\n\nModul 1,5RW:\n\nlze pomocí elektrického ovládání prodloužit o 20 cm dopředu\n\nvysouvá se směrem dopředu\n\nRelaxační modul má samostatné polohování nohou a opěrek\n\n\n\n4. Typy sestav\n\nZ nabídky modulů lze sestavit:\n\nkřeslo\n\ndvojpohovku\n\ntrojpohovku\n\ntaburet\n\nTaburet je bez úložného prostoru\n\n\n\n5. Úložný prostor\n\nŽádný modul tohoto modelu nemá úložný prostor\n\n\n\n6. Barový prvek SBV (šířka 35 cm)\n\nLze:\n\nvložit mezi sedáky\n\nnebo ukončit sestavu\n\nSoučástí je dřevěná (dýha) otočná police:\n\nmořená (výběr z více barevných provedení)\n\nnebo očalouněná látkou či kůží\n\nVarianty výbavy barového prvku\n\nSBV10\n\n2 kovové otvory na láhve\n\nvnitřní osvětlení se senzorem\n\nSBV20\n\nvše ze SBV10\n\nnavíc vyjímatelné, ohebné LED světlo s dotykovým stmívačem\n\nSBV30\n\nvše ze SBV20\n\npanel se zásuvkou 230 V\n\n2× USB (1× typ A, 1× typ C)\n\nindukční nabíječka mobilního telefonu\n\nSBV40\n\nvše ze SBV30\n\nnavíc chlazení a ohřívání nápojů\n\n\n\n7. Nožky\n\nKovové nožky:\n\nvýška 6 cm\n\nZákladní barva:\n\nantracit – lesk\n\nBarvy za příplatek:\n\nčerná\n\nbílá\n\nšedá\n\nzlatá\n\nhnědá\n\nsvětle šedá\n\n\n\n8. Ukončení modulů\n\nSamostatné vnitřní moduly nelze ukončit očalouněním bez boku\n\nSedačku lze ukončit barovým modulem SBV\n\n\n\n9. Omezení kombinací\n\nModul SBV bar nelze spojit s područkou\n\nNelze kombinovat:\n\nrůzné látky\n\nrůzné kůže\n\nrůzné barvy v rámci jedné sestavy\n\n\n\n10. Konstrukce a výplně\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce pružné HR pěny\n\nOpěrky:\n\nPUR pěna\n\nnadýchaná vlákna\n\n\n\n11. Prošití\n\nKontrastní prošití (typ moccasin) je možné\n\nLze použít:\n\nna sedácích\n\nna područkách\n\nVýběr z 5 barev\n\n\n\n12. Atypické úpravy\n\nAtypy nejsou možné, zejména:\n\núpravy\n\nzkracování\n\nprodlužování modulů mimo standardní rozměry (viz produktový list)\n\n\n\n13. Technická látka – upozornění pro prodej\n\nU modulů:\n\nroh\n\nbar\n\nmoduly s funkcí je korpus výrazně snížený\n\nZespodu je viditelné očalounění černou technickou látkou\n\nNěkteří zákazníci s tím mohou mít problém → nutné komunikovat předem\n\n\n\n"},{"type":"file","title":"Gisele.docx","content":"Sedací souprava GISELE (COOL)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nLuxusní varianta:\n\nbroušená kůže Vintage (nubuk)\n\n\n\n3. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířky sedáků:\n\n70 cm\n\n80 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\ntaburet\n\ndostavné taburety (40 a 80 cm)\n\nV ceníku jsou moduly 70 a 80 cm:\n\ns možností očalounění z jedné strany\n\n\n\n4. Relax funkce\n\nSedáky lze konfigurovat s:\n\nmanuálním polohováním\n\nelektrickým polohováním\n\naku polohováním (baterie)\n\n\n\n5. Boky (područky)\n\nUkončení sedačky:\n\n3 typy boků\n\nŠířky boků:\n\n27 cm\n\n34 cm\n\n4 cm – Blenda\n\n\n\n6. Rohové moduly\n\nRohové moduly mohou být:\n\ns pohyblivými záhlavníky\n\nnebo s pevnými záhlavníky\n\n\n\n7. Úložný prostor\n\nÚložný prostor v modulech:\n\n1D (otomany)\n\nProdloužený modul 205 cm:\n\nvarianta s úložným prostorem\n\nnebo bez úložného prostoru\n\n\n\n8. Barové moduly\n\nMožnost vložit 6 typů barů\n\nBarové moduly mají:\n\ndřevěnou polici\n\nmožnost výběru moření\n\nDŮLEŽITÉ OMEZENÍ:\n\nbary 2SC, 6SC, 8SC\n\nNELZE použít k ukončení sedačky\n\nmusí být pouze mezi sedáky\n\n\n\n9. Funkce spaní\n\nRozkládací lůžko s matrací 11–12 cm\n\nVhodné pro denní spaní\n\nRozměry:\n\n140 × 190 cm\n\n160 × 190 cm\n\nTypy rozkladu:\n\nDelfin (Q) – běžný rozklad\n\nSedalift (F) – italský typ (šířka 160 cm)\n\n\n\n10. Nožky\n\nVarianty:\n\nkovové nožky\n\ndřevěné nízké nožky – 2,5 cm\n\nDřevěné nožky:\n\nmožnost výběru moření do odstínů\n\n\n\n11. Konstrukce a výplně\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce pružná HR pěna\n\n\n\n12. Atypické úpravy\n\nAtypy (úpravy, zkracování, prodlužování modulů):\n\nomezené\n\npouze na dotaz do výroby\n\nvždy dle produktového listu\n\n\n\n"},{"type":"file","title":"Iberio.docx","content":"Sedací souprava IBERIO (Comforti)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nDostupné tloušťky:\n\n0,9–1,1 mm\n\n1,2–1,3 mm\n\nLuxusní varianta:\n\nbroušená kůže Vintage (nubuk)\n\n\n\n3. Modulový systém\n\nModel je možné skládat modulově\n\nŠířka sedáku: 63 cm\n\nZ modulů lze sestavit:\n\nkřeslo\n\ndvojpohovku\n\ntrojpohovku (včetně varianty s rozkladem)\n\n\n\n4. Relax funkce\n\nKřeslo lze objednat ve variantě:\n\nrelax s elektrickým polohováním\n\nrelax s aku polohováním\n\nModul SW – prodloužený sedák\n\numožňuje pohodlné natažení nohou\n\n\n\n5. Ergonomické nastavení\n\nNastavitelná výška opěradla\n\nNastavitelná hloubka sedáku\n\nNastavení úhlu náklonu područek\n\n\n\n6. Funkce spaní\n\nTyp rozkladu: „PUMA“\n\nModerní lůžko s:\n\nrychlým\n\nsnadným\n\nintuitivním rozkládáním\n\n\n\n7. Úložný prostor\n\nÚložný prostor je k dispozici v modulech:\n\nSW\n\nST\n\n\n\n8. Konstrukce a výplně\n\nVýplň opěradel:\n\nčalounické popruhy\n\npěna VP (PUR)\n\nVýplň sedáků:\n\nvlnité pružiny\n\nu prvku X90K čalounické popruhy\n\nvysoce pružná HR pěna\n\n\n\n9. Nožky\n\nPovrchová úprava:\n\nkovové nohy – černé\n\nZa příplatek:\n\nmožnost jiného odstínu\n\n\n\n10. Technická látka – upozornění pro prodej\n\nU modulů:\n\nroh\n\nbar\n\nmoduly s funkcí je korpus výrazně snížený\n\nZespodu je viditelné očalounění černou technickou látkou\n\nNěkteří zákazníci s tím mohou mít problém → nutné komunikovat předem\n\n\n\n\n\n\n\n"},{"type":"file","title":"Linda (2).docx","content":"Sedací souprava LINDA (LIMITED)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z široké palety barev otěruvzdorných a voděodolných látek\n\nCeločalouněné provedení vhodné:\n\nke stěně\n\ni volně do prostoru\n\n2. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířka sedáku: 71 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nU rohového modulu:\n\nmožnost volby polohování záhlavníků (za příplatek)\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\nVýsuvný rozklad na spaní\n\nmatrace je v základu očalouněná v barvě hlavní látky\n\nza příplatek možnost očalounění matrace stejnou látkou\n\nTaburet s úložným prostorem\n\nVždy je nutné zadat barvu prošití nití (zdarma – povinný údaj do objednávky)\n\n3. Úložný prostor\n\nÚložný prostor je k dispozici v modulech:\n\nOT – otoman\n\n1 – jednosedák\n\n2 – dvousedák → úložný prostor řešen formou výsuvného šuplíku\n\nDP – dostavný taburet\n\n\n\n4. Konstrukce a komfort\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce elastická PUR pěna\n\nZajišťuje:\n\nvysoký komfort sezení\n\nstabilitu\n\ndlouhou životnost\n\n\n\n5. Prošití\n\nMožnost výrazného prošití nebo prošití v barvě látky\n\nBarva nití:\n\nvolitelná\n\nbez příplatku\n\nPovinný parametr při objednání\n\n\n\n6. Nožky\n\nChromové nožky\n\nPodpěrné nohy:\n\nčerný plast\n\n\n\n"},{"type":"file","title":"Marylin (2).docx","content":"Sedací souprava MARYLIN (LIMITED)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z široké palety barev otěruvzdorných a voděodolných látek\n\nCeločalouněné provedení – vhodné:\n\nke stěně\n\ni volně do prostoru\n\n\n\n2. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířka sedáku: 68 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky (mimo roh)\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\nVýsuvný rozklad na spaní\n\nmatrace je v základu očalouněná v barvě hlavní látky\n\nza příplatek možnost očalounění matrace stejnou látkou\n\nTaburet s úložným prostorem\n\nDostavný taburet s úložným prostorem\n\n\n\n3. Úložný prostor\n\nÚložný prostor je vždy v modulech:\n\nOT – otoman\n\n1 – jednosedák\n\n2 – dvousedák\n\nDP – dostavný taburet\n\n\n\n4. Konstrukce a komfort\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce elastická PUR pěna\n\nZajišťuje:\n\nvysoký komfort sezení\n\nstabilitu\n\ndlouhou životnost\n\n\n\n5. Nožky\n\nChromové nožky\n\nvýška cca 3 cm\n\nPodpěrné nohy:\n\nčerný plast\n\n\n\n6. Funkční využití – shrnutí pro prodej\n\nSedačka MARYLIN je ideální pro:\n\nvětší rodiny\n\nčasté návštěvy\n\nzákazníky, kteří chtějí komfort + spaní + úložný prostor\n\nSnadno se přemění na:\n\nprostorné lůžko pro přespání\n\nNastavitelné opěrky a kvalitní pěny:\n\nzajišťují pohodlí při sezení\n\ni při dlouhodobém relaxu\n\n\n\n"},{"type":"file","title":"Petty.docx","content":"Sedací souprava PETTY (Design)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Belgické látky FibreGuard\n\nAtest na čištění látek pouze vodou\n\nAntibakteriální vlastnosti\n\nSnadná údržba\n\nVhodné pro:\n\nrodiny s dětmi\n\ndomácnosti se zvýšenými hygienickými nároky\n\n\n\n3. Potahové materiály – kůže\n\nVýběr italských kůží nejvyšší kvality\n\nŠiroká paleta barevných provedení\n\n\n\n4. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nSoučástí nabídky je také křeslo\n\nŠířka sedáku: 70 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nVýsuvný rozklad na spaní\n\nTaburety:\n\n65 × 65 cm\n\n95 × 74 cm\n\n\n\n5. Záhlavníky\n\nZa příplatek možnost pohyblivého záhlavníku\n\nZvyšuje komfort při sezení i relaxu\n\n\n\n6. Úložné prostory\n\nÚložný prostor je k dispozici v modulech:\n\nRP\n\nLGPB\n\n\n\n7. Nožky a kovové prvky\n\nKovové nožky:\n\nchrom\n\nčerná – mat\n\nMechanismy záhlavníků:\n\nchrom\n\nčerná – mat\n\nVýška nožek:\n\n13 cm\n\n\n\n8. Konstrukce a komfort sezení\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nPUR pěna\n\nza příplatek možnost objednání tužšího sedáku\n\n\n\n9. Kombinace materiálů\n\nU tohoto modelu je možná kombinace:\n\nbarev\n\ndruhů látek\n\nkůží → výrazná designová výhoda modelu PETTY\n\n\n\n"},{"type":"file","title":"Romello.docx","content":"Sedací souprava ROMELLO (LIMITED)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z široké palety barev otěruvzdorných a voděodolných látek\n\nVhodné pro každodenní používání\n\nCeločalouněné provedení\n\n\n\n2. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířka sedáku: 85 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nMožnosti sestav:\n\nkřeslo\n\nelektrické relaxační křeslo\n\ndvojpohovka\n\nVýsuvný rozklad na spaní\n\nočalouněný ve stejné látce jako sedačka\n\nTaburet s úložným prostorem\n\n\n\n3. Speciální moduly\n\nModul 1E\n\nelektrický relax (polohování)\n\nModul BR\n\nbar s úložným prostorem\n\ntmavá deska\n\notevírání na výsuvných pístech\n\nzásuvka 230 V + USB\n\nModul BR LUX\n\nbar s úložným prostorem\n\notočná tmavá deska\n\nzásuvka 230 V + USB\n\nmodul je zkosený do úhlu 15°\n\n\n\n4. Úložné prostory\n\nÚložný prostor je k dispozici v modulech:\n\nOT – otoman\n\n1 – jednosedák\n\n2 – dvousedák → úložný prostor řešen formou výsuvného šuplíku\n\nD – dostavný taburet s úložným prostorem\n\n\n\n5. Konstrukce a komfort\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce elastická HR pěna\n\nZajišťuje:\n\nvysoký komfort sezení\n\ndlouhou životnost\n\nstabilitu celé sestavy\n\n\n\n6. Nožky\n\nKovové nohy v černé barvě\n\nPlastové podpěrné nohy\n\nRelax křeslo má nožky vyšší než ostatní moduly\n\n\n\n DŮLEŽITÉ UPOZORNĚNÍ – KOLEKCE LIMITED\n\nVeškeré popisy, kreslení i objednávání probíhá z pohledu sedícího.\n\nPlatí pro:\n\nkolekci LIMITED\n\nkolekci BASIC\n\nOrientace levá / pravá strana se určuje:\n\nz pozice osoby sedící na sedačce\n\nnikoli z pohledu čelem k sedačce\n\nToto pravidlo je zásadní pro správné zadání objednávky.\n\n\n\n"},{"type":"file","title":"Round.docx","content":"Sedací souprava ROUND (Design)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Belgické látky FibreGuard\n\nAtest na čištění látek pouze vodou\n\nAntibakteriální vlastnosti\n\nSnadná údržba\n\nVhodné pro domácnosti se zvýšenými nároky na hygienu\n\n\n\n3. Potahové materiály – kůže\n\nVýběr italských kůží nejvyšší kvality\n\nŠiroká paleta barevných provedení\n\n\n\n4. Modulový systém a tvarové možnosti\n\nModel je možné skládat modulově\n\nSoučástí nabídky je také křeslo\n\nŠířka sedáku: 75 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nTaburety:\n\n80 × 59 cm\n\nkulatý taburet, průměr 80 cm (bez úložného prostoru)\n\nUkončení sestavy:\n\npůlkruh – šířka 140 cm\n\nnebo otomany:\n\nšířka 123 cm\n\nšířka 117 cm (bez úložného prostoru)\n\n\n\n5. Relax / výsuvný modul\n\nSedačka nemá rozkládací lůžko\n\nJe vybavena elektrickým výsuvným modulem P-G:\n\nprodloužení sedu cca o 30 cm\n\nslouží k pohodlnému natažení nohou\n\n\n\n6. Záhlavníky v rohu\n\nZáhlavníky v rohovém modulu nejsou polohovatelné\n\n\n\n7. Úložné prostory\n\nModel ROUND nemá žádné úložné prostory\n\n\n\n8. Nožky a mechanické prvky\n\nKovové nožky v černé barvě\n\nMechanismy záhlavníků v černém provedení\n\n\n\n9. Konstrukce a komfort\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nPUR pěna\n\nZajišťuje:\n\nkomfortní sezení\n\nstabilitu\n\ndlouhou životnost\n\n\n\n\n\n\n\n"},{"type":"file","title":"Stellar.docx","content":"Sedací souprava STELLAR (Design)\n\n\n\n1. Potahové materiály – látky\n\nŠiroká paleta barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean\n\nOdolnost až 250 000 cyklů\n\nNejčastěji nabízené látky:\n\nCarabu\n\nMystic\n\nNordic – ideální pro majitele domácích zvířat\n\n\n\n2. Belgické látky FibreGuard\n\nAtest na čištění pouze vodou\n\nAntimikrobiální / antibakteriální vlastnosti\n\nVelmi snadná údržba\n\nVhodné pro:\n\nrodiny s dětmi\n\ndomácnosti s vysokými nároky na hygienu\n\n\n\n3. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nŠiroká paleta barevných provedení\n\nLuxusní a nadčasový vzhled\n\n\n\n4. Modulový systém a funkce spaní\n\nSedací souprava je modulární\n\nŠířky sedáků:\n\n61 cm\n\n73 cm\n\nMožnost sestavení:\n\nkřesla\n\ndvojpohovky\n\ntrojpohovky\n\nVýsuvný rozklad na spaní\n\nočalouněná matrace\n\nve stejné barvě jako potahová látka\n\nvhodné pro občasné spaní\n\n\n\n5. Design spodního korpusu\n\nVarianta s elegantní dřevěnou lištou:\n\nmožnost výběru různého moření dřeva\n\nAlternativa:\n\nvarianta bez lišty pro čistý moderní vzhled\n\n\n\n6. Úložné prostory\n\nPraktické úložné prostory v modulech:\n\nPR\n\nRP\n\nD1N\n\nPD\n\nPomáhají maximálně využít prostor v interiéru\n\n\n\n7. Konstrukce a komfort\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nPUR pěna\n\nZajišťuje:\n\ndlouhou životnost\n\nstabilitu\n\npohodlné sezení\n\n\n\n8. Kombinace materiálů\n\nU tohoto modelu je možná kombinace:\n\nbarev\n\ndruhů látek\n\nkůží → výrazná designová výhoda oproti většině Comforti modelů\n\n\n\n9. Nožky a kovové prvky\n\nKovové nožky:\n\nvýška 13 cm\n\nrůzné tvary a barevná provedení\n\nMechanismy záhlavníků:\n\nchrom\n\nčerný mat\n\nV nabídce také:\n\ndřevěné nožky\n\nmožnost výběru moření dřeva\n\n\n\n10. Individuální přizpůsobení\n\nPokud zákazníkovi nevyhovují standardní rozměry:\n\nje možné zpracovat individuální kalkulaci\n\nsedačku lze přizpůsobit konkrétním požadavkům → velká konkurenční výhoda modelu STELLAR\n\n\n\n"},{"type":"file","title":"Tullio.docx","content":"Sedací souprava TULLIO (Comforti)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nMezi nejčastěji nabízené látky patří:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nDostupné tloušťky:\n\n0,9–1,1 mm\n\n1,2–1,3 mm\n\nLuxusní varianta:\n\nbroušená kůže Vintage (nubuk)\n\n\n\n3. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířky sedáků:\n\n62 cm\n\n71 cm\n\n82 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\ntaburet s úložným prostorem\n\n\n\n4. Relax funkce\n\nSedáky lze konfigurovat s:\n\nelektrickým polohováním\n\naku polohováním (baterie)\n\nPolohování:\n\nnohou\n\nzáhlavníků → tzv. relax funkce\n\n\n\n5. Boky (područky)\n\nUkončení sedačky třemi typy boků:\n\nšířka 14 cm (rovný nebo vlnka)\n\nšířka 24 cm\n\n\n\n6. Úložný prostor\n\nÚložný prostor je:\n\nna obou koncových modulech sedací soupravy\n\nVelmi oblíbený modul 1,5SWL/P obsahuje:\n\npolohovací záhlavník\n\nboční polohovací opěrku\n\núložný prostor\n\n\n\n7. Barový prvek SBV (šířka 35 cm)\n\nLze:\n\nvložit mezi sedáky\n\nnebo ukončit sestavu\n\nSoučástí je dřevěná otočná police\n\nmožnost výběru moření\n\nnebo očalounění látkou či kůží\n\nVýbava barového modulu:\n\n2 kovové otvory na láhve\n\nmožnost chlazení nebo ohřevu nápojů\n\nvyjímatelné ohebné LED světlo s dotykovým stmívačem\n\nmožnost vnitřního osvětlení se senzorem\n\nzásuvka 230 V\n\n2× USB\n\nindukční nabíječka mobilního telefonu\n\n\n\n8. Rozkládací lůžko\n\nTyp: italský rozklad\n\nMatrace: 11–12 cm – vhodné pro denní spaní\n\nRozměry lůžka:\n\n140 × 190 cm\n\n120 × 190 cm\n\n\n\n9. Nožky\n\nKovové nožky:\n\nvýška 14 cm\n\nBarevné provedení (za příplatek):\n\nčerná\n\nbílá\n\nšedá\n\nzlatá\n\nhnědá\n\nsvětle šedá\n\nCena nožek se počítá za každý modul, který má nohy\n\nVhodné pro robotický vysavač\n\nVýjimky:\n\npod modulem s rozkladem\n\npod modulem s relax funkcí\n\npod modulem s barem → výška prostoru pouze cca 8–10 cm\n\n\n\n10. Ukončení modulů a omezení\n\nSamostatné vnitřní moduly 62 / 71 / 82 cm\n\nnelze ukončit očalouněním bez boku\n\nSedačku lze ukončit barovým modulem SBV\n\nModul SBV bar nelze spojit s područkou\n\n\n\n11. Taburet – důležité upozornění\n\nTaburet je cca o 3 cm nižší než sedáky na sedací soupravě → nutné upozornit zákazníka předem\n\n\n\n12. Konstrukce a výplně\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce pružná HR pěna\n\nOpěrky:\n\nPUR pěna\n\n\n\n13. Omezení kombinací\n\nNelze kombinovat:\n\nrůzné látky\n\nrůzné kůže\n\nrůzné barvy\n\nNení možné jiné (kontrastní) prošití nití\n\nPři provedení v kůži je sedák půlený švem\n\n\n\n14. Atypické úpravy\n\nAtypy nejsou možné, zejména:\n\nzkracování\n\nprodlužování\n\núpravy mimo rozměry uvedené v produktovém listu\n\n\n\n15. Technická látka – upozornění pro prodej\n\nU modulů:\n\nroh\n\nbar\n\nmoduly s funkcí je korpus výrazně snížený\n\nZespodu je viditelné očalounění černou technickou látkou\n\nNěkteří zákazníci s tím mohou mít problém – nutné komunikovat předem\n\n\n\n"},{"type":"file","title":"Vanix.docx","content":"Sedací souprava VANIX (Design)\n\n\n\n1. Potahové materiály – látky\n\nVýběr z velmi široké palety barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nMezi nejčastěji nabízené látky patří:\n\nCarabu\n\nMystic\n\nNordic – vhodná pro majitele domácích zvířat\n\n\n\n2. Belgické látky FibreGuard\n\nAtest na čištění látek pouze vodou\n\nAntibakteriální vlastnosti\n\nVhodné pro:\n\nrodiny s dětmi\n\ndomácnosti se zvýšenými nároky na hygienu\n\n\n\n3. Potahové materiály – kůže\n\nVýběr italských kůží nejvyšší kvality\n\nŠiroká paleta barevných provedení\n\n\n\n4. Modulový systém a základní konfigurace\n\nModel je možné skládat modulově\n\nŠířka sedáku: 73 cm\n\nSedáky jsou vybaveny manuálně polohovatelnými záhlavníky\n\nMožnosti sestav:\n\nkřeslo\n\ndvojpohovka\n\ntrojpohovka\n\nTaburet je bez úložného prostoru\n\n\n\n5. Funkce spaní\n\nVýsuvný rozklad na spaní\n\nOčalouněná matrace:\n\nve stejné barvě jako potahová látka\n\nVhodné pro:\n\nobčasné spaní\n\nnávštěvy\n\n\n\n6. Design spodního korpusu\n\nVarianta s elegantní dřevěnou lištou na spodním korpusu:\n\nmožnost výběru různého moření dřeva\n\nAlternativa:\n\nvarianta bez dřevěné lišty\n\n\n\n7. Boky\n\nBok s polohováním – zvýšení komfortu při sezení i relaxu\n\n\n\n8. Úložné prostory\n\nÚložný prostor je k dispozici v modulech:\n\nLGB\n\nD1N\n\nNa přání zákazníka (za příplatek):\n\nmožnost úložného prostoru v jednotlivém sedáku\n\nřešeno formou výsuvného šuplíku\n\n\n\n9. Konstrukce a komfort sezení\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nPUR pěna\n\nza příplatek možnost objednání tužšího sedáku\n\n\n\n10. Kombinace materiálů\n\nU tohoto modelu je možná kombinace:\n\nbarev\n\ndruhů látek\n\nkůží → výrazná designová výhoda oproti většině Comforti modelů\n\n\n\n11. Nožky\n\nNožky v provedení:\n\nčerná – matná\n\n\n\n"},{"type":"file","title":"Vera (2).docx","content":"Sedací souprava VERA (Comforti)\n\n\n\n1. Potahové materiály – látky\n\nVelmi široká paleta barev otěruvzdorných a voděodolných látek\n\nV nabídce světová špička Aquaclean – čištění pouze vodou\n\nOdolnost až 250 000 cyklů\n\nMezi nejčastěji nabízené látky patří:\n\nCarabu\n\nMystic\n\nNordic – ideální volba pro majitele domácích zvířat\n\n\n\n2. Potahové materiály – kůže\n\nItalské kůže nejvyšší kvality\n\nDostupné tloušťky:\n\n0,9–1,0 mm\n\n1,3–1,5 mm\n\nLuxusní varianta: broušená kůže Vintage (nubuk)\n\n\n\n3. Modulové řešení a relax funkce\n\nSedací soupravu lze skládat modulově\n\nŠířky sedáků:\n\n72 cm\n\n82 cm\n\nMožnost vybavení:\n\nelektrickým polohováním\n\naku polohováním (nabíjecí baterie)\n\nRelax funkce je dostupná pouze u vybraných modulů\n\n\n\n4. Typy sestav\n\nMožnost objednat:\n\nkřeslo\n\ndvojpohovku\n\ntrojpohovku\n\ntaburet\n\nTaburet nemá úložný prostor\n\n\n\n5. Úložný prostor\n\nÚložný prostor je k dispozici pouze v modulech:\n\n1,5SWL/P\n\n1,5STL/P\n\n\n\n6. Barový prvek SBV (šířka 35 cm)\n\nLze:\n\nvložit mezi sedáky\n\nnebo ukončit sestavu\n\nSoučástí je dřevěná otočná police\n\nmořená (výběr z více barev)\n\nnebo očalouněná látkou / kůží\n\nVarianty výbavy baru:\n\nSBV10\n\n2 kovové otvory na láhve\n\nvnitřní osvětlení se senzorem\n\nSBV20\n\nvše ze SBV10\n\nnavíc vyjímatelné ohebné LED světlo s dotykovým stmívačem\n\nSBV30\n\nvše ze SBV20\n\npanel se zásuvkou 230 V\n\n2× USB (1× A, 1× C)\n\nindukční nabíječka mobilního telefonu\n\nSBV40\n\nvše ze SBV30\n\nnavíc chlazení a ohřívání nápojů\n\n\n\n7. Rozkládací lůžko\n\nTyp: italský rozklad\n\nMatrace: 10–11 cm – vhodné pro denní spaní\n\nRozměr lůžka: 140 × 190 cm\n\nDŮLEŽITÉ OMEZENÍ:\n\nmodul s rozkladem nelze umístit doprostřed sestavy\n\nvždy musí být ukončený bokem\n\nnelze použít např. u sestav do tvaru U\n\n\n\n8. Nožky\n\nKovové nožky:\n\nvýška 15 cm\n\nZákladní barva:\n\nantracit – lesk\n\nBarvy za příplatek:\n\nčerná\n\nbílá\n\nšedá\n\nzlatá\n\nhnědá\n\nsvětle šedá\n\nVhodné pro robotický vysavač\n\nVýjimky:\n\npod modulem s rozkladem\n\npod modulem s relax funkcí → výška prostoru pouze cca 8–10 cm\n\n\n\n9. Ukončení modulů\n\nSamostatné vnitřní moduly nelze ukončit očalouněním bez boku\n\nSedačku lze ukončit barovým modulem SBV\n\n\n\n10. Omezení kombinací\n\nModul SBV bar nelze spojit s područkou\n\nNelze kombinovat:\n\nrůzné látky\n\nrůzné kůže\n\nrůzné barvy v rámci jedné sestavy\n\nNení možné kontrastní nebo jiné prošití nití\n\n\n\n11. Konstrukce a výplně\n\nKonstrukce:\n\nmasivní dřevo\n\npodélné vlnité pružiny\n\nSedáky:\n\nvysoce pružné HR pěny\n\nZádové opěrky:\n\nkombinace HR pěny\n\nsilikonové granuláty\n\n\n\n12. Atypické úpravy\n\nNejsou možné žádné atypy, např.:\n\nzkracování\n\nprodlužování\n\njiné rozměry mimo produktový list\n\n\n\n13. Technická látka – upozornění pro prodej\n\nU modulů:\n\nroh\n\nbar\n\nmoduly s funkcí je korpus výrazně snížený\n\nZespodu je viditelné očalounění černou technickou látkou\n\nNěkteří zákazníci s tím mohou mít problém – je nutné na to upozornit předem\n\n\n\n"}];
+</script>
+</body>', embedScript + '\n</body>');
+
+    const blob = new Blob([html], {type: 'text/html; charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'nejci-expert-FINAL.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 150);
+}
+
+// ── HELPERS ──
+function handleKey(e) { if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,140)+'px'; }
+function now() { return new Date().toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'}); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+
+
+</body></html>
