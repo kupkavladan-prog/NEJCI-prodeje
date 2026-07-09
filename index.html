@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Porovnání prodejů prodejenv2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
@@ -639,6 +640,8 @@
     <input type="file" id="backupFile" accept=".json" onchange="importBackup(event)">
     <label class="import-btn" for="csvFile">Nahrát CSV</label>
     <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
+    <label class="import-btn" for="moneyFile" style="background:var(--accent);color:#000;font-weight:700">⬆ Import z Money (xlsx)</label>
+    <input type="file" id="moneyFile" accept=".xlsx,.xls" multiple onchange="importMoney(event)">
   </div>
 
   <div class="kpi-row" id="kpiRow"></div>
@@ -701,6 +704,79 @@
 <script>
 const MONTHS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
 const STORES = ['Opava','Brno','Modo','Butovice','Hradec','Mladá Boleslav','Plzeň','České Budějovice','Olomouc City','Ol. Timpo','Přerov','Bruntál','Blansko','Hranice','Opava Kuch','Přerov Kuch','Bruntál Kuch','Hranice Kuch','Velkoobchod','E-shop'];
+
+// ── Import z Money S4 (net po střediscích, nedestruktivní) ─────────────
+// Mapování kódu střediska z Money na index prodejny v STORES
+const MONEY_CODE2IDX = {
+  'OPAV-TE-NA':0,'BRNO-KP-DE':1,'PRAH-MO-DE':2,'PRAH-BU-DE':3,'HKRA-AT-DE':4,
+  'MBOL-OL-DE':5,'PLZE-OL-DE':6,'ČBUD-ME-DE':7,'OLOM-HA-DE':8,'OLOM-TI-NA':9,
+  'PRER-CE-NA':10,'BRUN-KR-NA':11,'BLAN-PI-NA':12,'HRAN-TR-NA':13,'OPAV-TE-KU':14,
+  'PRER-CE-KU':15,'BRUN-KR-KU':16,'HRAN-TR-KU':17,'VELK-CZ-NA':18,'E-SHOP-NA':19
+};
+function moneyToDate(v){
+  if(v instanceof Date) return v;
+  if(typeof v==='number') return new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);
+  if(typeof v==='string'){ const m=v.match(/(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2,4})/); if(m){let y=+m[3];if(y<100)y+=2000;return new Date(y,+m[2]-1,+m[1]);} const d=new Date(v); if(!isNaN(d))return d; }
+  return null;
+}
+function importMoney(ev){
+  const files=[...ev.target.files].filter(f=>/\.x(lsx|ls)$/i.test(f.name));
+  if(!files.length) return;
+  let pending=files.length; const allRows=[]; const skipped=new Set(); let errMsg='';
+  files.forEach(f=>{
+    const rd=new FileReader();
+    rd.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+        let hi=-1;
+        for(let i=0;i<Math.min(aoa.length,15);i++){ const row=(aoa[i]||[]).map(c=>(''+(c==null?'':c)).trim().toLowerCase()); if(row.some(c=>c==='středisko'||c.includes('třed'))&&row.some(c=>c.includes('základ'))){hi=i;break;} }
+        if(hi<0) throw new Error('Soubor '+f.name+': nenalezeno záhlaví Money (Středisko / Celkem základ).');
+        const head=(aoa[hi]||[]).map(c=>(''+(c==null?'':c)).trim().toLowerCase());
+        const iDate=head.findIndex(c=>c.includes('datum vyst'))>=0?head.findIndex(c=>c.includes('datum vyst')):head.findIndex(c=>c.includes('datum'));
+        const iBase=head.findIndex(c=>c.includes('základ'));
+        const iStred=head.findIndex(c=>c==='středisko')>=0?head.findIndex(c=>c==='středisko'):head.findIndex(c=>c.includes('třed'));
+        for(let i=hi+1;i<aoa.length;i++){ const r=aoa[i]; if(!r)continue; const st=(''+(r[iStred]==null?'':r[iStred])).trim(); if(!st)continue; const b=Number(r[iBase]); if(!isFinite(b))continue; const d=moneyToDate(r[iDate]); if(!d)continue; allRows.push({y:d.getFullYear(),m:d.getMonth(),base:b,st}); }
+      }catch(err){ errMsg=err.message; }
+      if(--pending===0) applyMoney(allRows,skipped,errMsg);
+    };
+    rd.readAsArrayBuffer(f);
+  });
+  ev.target.value='';
+}
+function applyMoney(rows,skipped,errMsg){
+  if(errMsg){ alert(errMsg); return; }
+  if(!rows.length){ alert('Žádná data k importu.'); return; }
+  // pokryté (rok,měsíc) – ty vynulujeme a přepíšeme čerstvými čísly
+  const covered=new Set();
+  rows.forEach(r=>covered.add(r.y+'-'+r.m));
+  covered.forEach(ym=>{
+    const [yr,m]=ym.split('-').map(Number);
+    if(!data[yr]) data[yr]={};
+    STORES.forEach((_,si)=>{ if(!data[yr][si]) data[yr][si]=Array(12).fill(0); data[yr][si][m]=0; });
+    if(!YEARS.includes(yr)){ YEARS.push(yr); YEARS.sort((a,b)=>a-b); }
+  });
+  // sečti net (jen kladný základ = bez storna) do buněk
+  let used=0;
+  rows.forEach(r=>{
+    if(r.base<=0) return;
+    const si=MONEY_CODE2IDX[r.st];
+    if(si==null){ skipped.add(r.st); return; }
+    data[r.y][si][r.m]+=r.base; used++;
+  });
+  // ulož + sync + překresli
+  try{ if(typeof saveToStorage==='function') saveToStorage(); }catch(e){}
+  try{ if(typeof buildYearSelect==='function') buildYearSelect(); }catch(e){}
+  try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+  try{ if(typeof saveToCloud==='function') saveToCloud(); }catch(e){}
+  const yrs=[...new Set(rows.map(r=>r.y))].sort();
+  const ms=[...covered].map(x=>+x.split('-')[1]).sort((a,b)=>a-b);
+  const mNames=[...new Set(ms)].map(m=>MONTHS[m]).join(', ');
+  let msg='✓ Import z Money hotov.\nRoky: '+yrs.join(', ')+'\nMěsíce: '+mNames+'\nZpracováno řádků: '+used;
+  if(skipped.size) msg+='\n\n⚠ Nezařazená střediska (nejsou v seznamu prodejen): '+[...skipped].join(', ');
+  alert(msg);
+}
 const COLORS = [
   '#00e5a0','#ff6b35','#6c63ff','#ffd93d','#45b7d1','#f7797d','#a8e063',
   '#30cfd0','#f093fb','#fd746c','#43e97b','#fa709a','#4facfe','#fee140',
@@ -1538,7 +1614,3 @@ loadFromCloud().then(loaded => {
 </script>
 </body>
 </html>
-
-</file>
-
-</uploaded_files>
